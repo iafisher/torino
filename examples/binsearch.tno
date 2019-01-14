@@ -1,0 +1,20 @@
+fn binsearch(lst, val) {
+    let lo = 0
+    let hi = lst.len()
+    while lo < hi {
+        let mid = (lo + hi) // 2
+        if lst[mid] == val {
+            return mid
+        } elif lst[mid] < val {
+            lo = mid + 1
+        } else {
+            hi = mid
+        }
+    }
+    return null
+}
+
+
+let countries = ["Afghanistan", "Barbados", "Dominica"]
+print(binsearch(countries, "Barbados"))
+print(binsearch(countries, "Cyprus"))

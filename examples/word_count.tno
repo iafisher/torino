@@ -1,0 +1,16 @@
+fn count_words(sentence) {
+    let ret = {}
+    for word in sentence {
+        if word in ret {
+            ret[word] += 1
+        } else {
+            ret[word] = 1
+        }
+    }
+    return ret
+}
+
+let count_map = count_words("To strive, to seek, to find and not to yield".split())
+for key, val in count_map {
+  println(key + ": " + str(val))
+}
