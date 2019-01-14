@@ -4,12 +4,19 @@ import "testing"
 
 func TestNextToken(t *testing.T) {
 	input := `
-fn f(y) {
+fn f(x, y) {
 	return y / 3 + 7 * -2 // 4
 }
 
-let x = f(10)
-let s = "\n\c\\\""`
+let x = f(1, 10)
+let s = "\n\c\\\""
+
+/* This isn't valid Torino code but whatever */
+== > < >= <= or and if for while in ""
+
+/*
+Multiline comment with some tricky delimiters: * /* * /
+*/`
 	tests := []struct {
 		expectedType  string
 		expectedValue string
@@ -18,6 +25,8 @@ let s = "\n\c\\\""`
 		{TOKEN_FN, "fn"},
 		{TOKEN_SYMBOL, "f"},
 		{TOKEN_LPAREN, "("},
+		{TOKEN_SYMBOL, "x"},
+		{TOKEN_COMMA, ","},
 		{TOKEN_SYMBOL, "y"},
 		{TOKEN_RPAREN, ")"},
 		{TOKEN_LBRACE, "{"},
@@ -39,16 +48,35 @@ let s = "\n\c\\\""`
 		{TOKEN_NEWLINE, "\n"},
 		{TOKEN_LET, "let"},
 		{TOKEN_SYMBOL, "x"},
-		{TOKEN_EQ, "="},
+		{TOKEN_ASSIGN, "="},
 		{TOKEN_SYMBOL, "f"},
 		{TOKEN_LPAREN, "("},
+		{TOKEN_INT, "1"},
+		{TOKEN_COMMA, ","},
 		{TOKEN_INT, "10"},
 		{TOKEN_RPAREN, ")"},
 		{TOKEN_NEWLINE, "\n"},
 		{TOKEN_LET, "let"},
 		{TOKEN_SYMBOL, "s"},
-		{TOKEN_EQ, "="},
+		{TOKEN_ASSIGN, "="},
 		{TOKEN_STRING, "\n\\c\\\""},
+		{TOKEN_NEWLINE, "\n"},
+		{TOKEN_NEWLINE, "\n"},
+		{TOKEN_NEWLINE, "\n"},
+		{TOKEN_EQ, "=="},
+		{TOKEN_GT, ">"},
+		{TOKEN_LT, "<"},
+		{TOKEN_GE, ">="},
+		{TOKEN_LE, "<="},
+		{TOKEN_OR, "or"},
+		{TOKEN_AND, "and"},
+		{TOKEN_IF, "if"},
+		{TOKEN_FOR, "for"},
+		{TOKEN_WHILE, "while"},
+		{TOKEN_IN, "in"},
+		{TOKEN_STRING, ""},
+		{TOKEN_NEWLINE, "\n"},
+		{TOKEN_NEWLINE, "\n"},
 		{TOKEN_EOF, ""},
 	}
 

@@ -1,6 +1,9 @@
 package lexer
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type Lexer struct {
 	program  string
@@ -14,24 +17,34 @@ func New(program string) *Lexer {
 }
 
 var keywords = map[string]string{
+	"and":    TOKEN_AND,
 	"fn":     TOKEN_FN,
+	"for":    TOKEN_FOR,
+	"if":     TOKEN_IF,
+	"in":     TOKEN_IN,
 	"let":    TOKEN_LET,
+	"or":     TOKEN_OR,
 	"return": TOKEN_RETURN,
+	"while":  TOKEN_WHILE,
 }
 
 func (l *Lexer) NextToken() *Token {
+	err := l.skipWhitespaceAndComments()
+	if err {
+		fmt.Println("ouch!")
+		return l.makeToken(TOKEN_UNKNOWN, "")
+	}
+
 	if l.position >= len(l.program) {
 		return l.makeToken(TOKEN_EOF, "")
 	}
 
-	for isWhitespace(l.program[l.position]) {
-		l.advance()
-	}
-
 	ch := l.program[l.position]
 
-	// Single character tokens
+	// Single and double character tokens
 	switch ch {
+	case ',':
+		return l.makeTokenAndAdvance(TOKEN_COMMA, ",")
 	case '+':
 		return l.makeTokenAndAdvance(TOKEN_PLUS, "+")
 	case '-':
@@ -39,15 +52,41 @@ func (l *Lexer) NextToken() *Token {
 	case '*':
 		return l.makeTokenAndAdvance(TOKEN_ASTERISK, "*")
 	case '/':
-		if l.position+1 < len(l.program) && l.program[l.position+1] == '/' {
+		if l.peek('/') {
+			tok := l.makeToken(TOKEN_DOUBLE_SLASH, "//")
 			l.advance()
 			l.advance()
-			return l.makeToken(TOKEN_DOUBLE_SLASH, "//")
+			return tok
 		} else {
 			return l.makeTokenAndAdvance(TOKEN_SLASH, "/")
 		}
 	case '=':
-		return l.makeTokenAndAdvance(TOKEN_EQ, "=")
+		if l.peek('=') {
+			tok := l.makeToken(TOKEN_EQ, "==")
+			l.advance()
+			l.advance()
+			return tok
+		} else {
+			return l.makeTokenAndAdvance(TOKEN_ASSIGN, "=")
+		}
+	case '<':
+		if l.peek('=') {
+			tok := l.makeToken(TOKEN_LE, "<=")
+			l.advance()
+			l.advance()
+			return tok
+		} else {
+			return l.makeTokenAndAdvance(TOKEN_LT, "<")
+		}
+	case '>':
+		if l.peek('=') {
+			tok := l.makeToken(TOKEN_GE, ">=")
+			l.advance()
+			l.advance()
+			return tok
+		} else {
+			return l.makeTokenAndAdvance(TOKEN_GT, ">")
+		}
 	case '(':
 		return l.makeTokenAndAdvance(TOKEN_LPAREN, "(")
 	case ')':
@@ -63,7 +102,6 @@ func (l *Lexer) NextToken() *Token {
 	// Multi character tokens
 	switch {
 	case ch == '"':
-		l.advance()
 		value, ok := l.readString()
 		if ok {
 			return l.makeToken(TOKEN_STRING, value)
@@ -96,6 +134,26 @@ func (l *Lexer) advance() {
 	}
 }
 
+func (l *Lexer) peek(ch byte) bool {
+	return l.position+1 < len(l.program) && l.program[l.position+1] == ch
+}
+
+func (l *Lexer) skipWhitespaceAndComments() bool {
+	for l.onCommentOrWhitespace() {
+		if isWhitespace(l.program[l.position]) {
+			for l.position < len(l.program) && isWhitespace(l.program[l.position]) {
+				l.advance()
+			}
+		} else {
+			err := l.readComment()
+			if err {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (l *Lexer) readIdentifier() string {
 	start := l.position
 	for l.position < len(l.program) && isIdentifierChar(l.program[l.position]) {
@@ -114,6 +172,9 @@ func (l *Lexer) readInteger() string {
 
 func (l *Lexer) readString() (string, bool) {
 	var str strings.Builder
+
+	// Skip the opening quote.
+	l.advance()
 
 	for {
 		if l.position >= len(l.program) {
@@ -140,6 +201,24 @@ func (l *Lexer) readString() (string, bool) {
 	return str.String(), true
 }
 
+func (l *Lexer) readComment() bool {
+	// Skip the initial slash and asterisk.
+	l.advance()
+	l.advance()
+
+	for l.position < len(l.program) && !strings.HasPrefix(l.program[l.position:], "*/") {
+		l.advance()
+	}
+
+	if l.position == len(l.program) {
+		return true
+	} else {
+		l.advance()
+		l.advance()
+		return false
+	}
+}
+
 func (l *Lexer) makeToken(typ string, value string) *Token {
 	return &Token{typ, value, &Location{l.line, l.column}}
 }
@@ -148,6 +227,11 @@ func (l *Lexer) makeTokenAndAdvance(typ string, value string) *Token {
 	tok := l.makeToken(typ, value)
 	l.advance()
 	return tok
+}
+
+func (l *Lexer) onCommentOrWhitespace() bool {
+	return l.position < len(l.program) && isWhitespace(l.program[l.position]) ||
+		strings.HasPrefix(l.program[l.position:], "/*")
 }
 
 func canStartIdentifier(ch byte) bool {
