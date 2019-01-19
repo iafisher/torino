@@ -18,3 +18,17 @@ func TestParseInteger(t *testing.T) {
 		t.Fatalf("Wrong integer value: expected 10, got %d", node.Value)
 	}
 }
+
+func TestParseString(t *testing.T) {
+	p := New(lexer.New("\"hello\\n\""))
+
+	tree := p.parseExpression()
+	node, ok := tree.(*StringNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *StringNode, got %T", tree)
+	}
+
+	if node.Value != "hello\n" {
+		t.Fatalf("Wrong string value: expected \"hello\\n\", got %q", node.Value)
+	}
+}

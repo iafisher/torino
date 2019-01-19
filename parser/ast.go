@@ -15,3 +15,7 @@ type BlockNode struct {
 type IntegerNode struct {
 	Value int64
 }
+
+type StringNode struct {
+	Value string
+}
