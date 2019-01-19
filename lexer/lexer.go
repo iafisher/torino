@@ -181,15 +181,20 @@ func (l *Lexer) readString() (string, bool) {
 			return str.String(), false
 		}
 
-		if l.program[l.position] == '"' {
+		ch := l.program[l.position]
+		if ch == '"' {
 			break
-		} else if l.program[l.position] == '\\' {
+		} else if ch == '\\' {
 			l.advance()
 			if l.position >= len(l.program) {
 				return str.String(), false
 			}
 			str.WriteString(decodeEscape(l.program[l.position]))
 			l.advance()
+		} else if ch == '\n' {
+			// TODO: Better error for this?
+			l.advance()
+			return str.String(), false
 		} else {
 			str.WriteByte(l.program[l.position])
 			l.advance()

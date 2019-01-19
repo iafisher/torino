@@ -114,3 +114,19 @@ func TestUnclosedStringLiterals(t *testing.T) {
 		}
 	}
 }
+
+func TestNewlineInStringLiteral(t *testing.T) {
+	l := New("\"\n\"")
+	first := l.NextToken()
+	if first.Type != TOKEN_UNKNOWN {
+		t.Fatalf("Expected unknown token, got %q", first.Type)
+	}
+	second := l.NextToken()
+	if second.Type != TOKEN_UNKNOWN {
+		t.Fatalf("Expected unknown token, got %q", second.Type)
+	}
+	third := l.NextToken()
+	if third.Type != TOKEN_EOF {
+		t.Fatalf("Expected EOF token, got %q", third.Type)
+	}
+}
