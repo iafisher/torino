@@ -79,6 +79,8 @@ func (p *Parser) parseExpression() Expression {
 		return &IntegerNode{v}
 	} else if tkn.Type == lexer.TOKEN_STRING {
 		return &StringNode{tkn.Value}
+	} else if tkn.Type == lexer.TOKEN_SYMBOL {
+		return &SymbolNode{tkn.Value}
 	} else {
 		panic("parseExpression - unexpected token")
 	}

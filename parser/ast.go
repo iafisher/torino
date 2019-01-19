@@ -19,3 +19,7 @@ type IntegerNode struct {
 type StringNode struct {
 	Value string
 }
+
+type SymbolNode struct {
+	Value string
+}

@@ -32,3 +32,17 @@ func TestParseString(t *testing.T) {
 		t.Fatalf("Wrong string value: expected \"hello\\n\", got %q", node.Value)
 	}
 }
+
+func TestParseSymbol(t *testing.T) {
+	p := New(lexer.New("foo"))
+
+	tree := p.parseExpression()
+	node, ok := tree.(*SymbolNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *SymbolNode, got %T", tree)
+	}
+
+	if node.Value != "foo" {
+		t.Fatalf("Wrong symbol value: expected foo, got %s", node.Value)
+	}
+}
