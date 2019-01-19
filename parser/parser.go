@@ -38,10 +38,14 @@ import (
 
 type Parser struct {
 	lexer *lexer.Lexer
+
+	curToken *lexer.Token
 }
 
 func New(l *lexer.Lexer) *Parser {
-	return &Parser{l}
+	p := &Parser{l, nil}
+	p.nextToken()
+	return p
 }
 
 func (p *Parser) Parse() *BlockNode {
@@ -53,10 +57,9 @@ func (p *Parser) parseBlock() *BlockNode {
 	for {
 		stmt := p.parseStatement()
 		statements = append(statements, stmt)
-		tkn := p.lexer.NextToken()
-		if tkn.Type == lexer.TOKEN_NEWLINE {
+		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
 			continue
-		} else if tkn.Type == lexer.TOKEN_EOF {
+		} else if p.checkCurToken(lexer.TOKEN_EOF) {
 			break
 		} else {
 			panic("parseBlock - unexpected token")
@@ -70,18 +73,26 @@ func (p *Parser) parseStatement() Statement {
 }
 
 func (p *Parser) parseExpression() Expression {
-	tkn := p.lexer.NextToken()
-	if tkn.Type == lexer.TOKEN_INT {
-		v, err := strconv.ParseInt(tkn.Value, 10, 64)
+	if p.checkCurToken(lexer.TOKEN_INT) {
+		v, err := strconv.ParseInt(p.curToken.Value, 10, 64)
 		if err != nil {
 			panic("parseExpression - could not parse integer token")
 		}
 		return &IntegerNode{v}
-	} else if tkn.Type == lexer.TOKEN_STRING {
-		return &StringNode{tkn.Value}
-	} else if tkn.Type == lexer.TOKEN_SYMBOL {
-		return &SymbolNode{tkn.Value}
+	} else if p.checkCurToken(lexer.TOKEN_STRING) {
+		return &StringNode{p.curToken.Value}
+	} else if p.checkCurToken(lexer.TOKEN_SYMBOL) {
+		return &SymbolNode{p.curToken.Value}
 	} else {
 		panic("parseExpression - unexpected token")
 	}
+}
+
+func (p *Parser) checkCurToken(expectedType string) bool {
+	return p.curToken.Type == expectedType
+}
+
+func (p *Parser) nextToken() *lexer.Token {
+	p.curToken = p.lexer.NextToken()
+	return p.curToken
 }
