@@ -18,6 +18,7 @@ func New(program string) *Lexer {
 
 var keywords = map[string]string{
 	"and":    TOKEN_AND,
+	"false":  TOKEN_FALSE,
 	"fn":     TOKEN_FN,
 	"for":    TOKEN_FOR,
 	"if":     TOKEN_IF,
@@ -25,6 +26,7 @@ var keywords = map[string]string{
 	"let":    TOKEN_LET,
 	"or":     TOKEN_OR,
 	"return": TOKEN_RETURN,
+	"true":   TOKEN_TRUE,
 	"while":  TOKEN_WHILE,
 }
 

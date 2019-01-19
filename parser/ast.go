@@ -16,6 +16,10 @@ type IntegerNode struct {
 	Value int64
 }
 
+type BoolNode struct {
+	Value bool
+}
+
 type StringNode struct {
 	Value string
 }

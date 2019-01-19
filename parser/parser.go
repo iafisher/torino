@@ -17,7 +17,8 @@ return := RETURN expr?
 
 brace-block := LBRACE NEWLINE block RBRACE
 
-expr  := infix | call | pexpr | list | map | INT | STRING | SYMBOL
+expr  := infix | call | pexpr | list | map
+       | INT | STRING | SYMBOL | TRUE | FALSE
 pexpr := LPAREN expr RPAREN
 infix := expr OP expr
 call  := SYMBOL LPAREN args? RPAREN
@@ -83,6 +84,10 @@ func (p *Parser) parseExpression() Expression {
 		return &StringNode{p.curToken.Value}
 	} else if p.checkCurToken(lexer.TOKEN_SYMBOL) {
 		return &SymbolNode{p.curToken.Value}
+	} else if p.checkCurToken(lexer.TOKEN_TRUE) {
+		return &BoolNode{true}
+	} else if p.checkCurToken(lexer.TOKEN_FALSE) {
+		return &BoolNode{false}
 	} else {
 		panic("parseExpression - unexpected token")
 	}

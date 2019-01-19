@@ -12,7 +12,7 @@ let x = f(1, 10)
 let s = "\n\c\\\""
 
 /* This isn't valid Torino code but whatever */
-== > < >= <= or and if for while in ""
+== > < >= <= or and if for while in "" true false
 
 /*
 Multiline comment with some tricky delimiters: * /* * /
@@ -75,6 +75,8 @@ Multiline comment with some tricky delimiters: * /* * /
 		{TOKEN_WHILE, "while"},
 		{TOKEN_IN, "in"},
 		{TOKEN_STRING, ""},
+		{TOKEN_TRUE, "true"},
+		{TOKEN_FALSE, "false"},
 		{TOKEN_NEWLINE, "\n"},
 		{TOKEN_NEWLINE, "\n"},
 		{TOKEN_EOF, ""},
