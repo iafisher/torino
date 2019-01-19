@@ -8,10 +8,10 @@ import (
 func TestParseInteger(t *testing.T) {
 	p := New(lexer.New("10"))
 
-	tree := p.Parse()
+	tree := p.parseExpression()
 	node, ok := tree.(*IntegerNode)
 	if !ok {
-		t.Fatalf("Wrong AST type: expected integer, got %T", tree)
+		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", tree)
 	}
 
 	if node.Value != 10 {

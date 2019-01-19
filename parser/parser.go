@@ -31,7 +31,10 @@ maparg  := expr COLON expr
 */
 package parser
 
-import "github.com/iafisher/torino/lexer"
+import (
+	"github.com/iafisher/torino/lexer"
+	"strconv"
+)
 
 type Parser struct {
 	lexer *lexer.Lexer
@@ -41,10 +44,40 @@ func New(l *lexer.Lexer) *Parser {
 	return &Parser{l}
 }
 
-func (p *Parser) Parse() Node {
+func (p *Parser) Parse() *BlockNode {
 	return p.parseBlock()
 }
 
 func (p *Parser) parseBlock() *BlockNode {
-	return &BlockNode{}
+	statements := []Node{}
+	for {
+		stmt := p.parseStatement()
+		statements = append(statements, stmt)
+		tkn := p.lexer.NextToken()
+		if tkn.Type == lexer.TOKEN_NEWLINE {
+			continue
+		} else if tkn.Type == lexer.TOKEN_EOF {
+			break
+		} else {
+			panic("parseBlock - unexpected token")
+		}
+	}
+	return &BlockNode{statements}
+}
+
+func (p *Parser) parseStatement() Statement {
+	return p.parseExpression()
+}
+
+func (p *Parser) parseExpression() Expression {
+	tkn := p.lexer.NextToken()
+	if tkn.Type == lexer.TOKEN_INT {
+		v, err := strconv.ParseInt(tkn.Value, 10, 64)
+		if err != nil {
+			panic("parseExpression - could not parse integer token")
+		}
+		return &IntegerNode{v}
+	} else {
+		panic("parseExpression - unexpected token")
+	}
 }
