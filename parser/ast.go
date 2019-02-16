@@ -27,6 +27,14 @@ type LetNode struct {
 
 func (n *LetNode) statementNode() {}
 
+type InfixNode struct {
+	Op    string
+	Left  Expression
+	Right Expression
+}
+
+func (n *InfixNode) expressionNode() {}
+
 type IntegerNode struct {
 	Value int64
 }

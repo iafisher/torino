@@ -8,21 +8,15 @@ import (
 func TestParseInteger(t *testing.T) {
 	p := New(lexer.New("10"))
 
-	tree := p.parseExpression()
-	node, ok := tree.(*IntegerNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", tree)
-	}
+	tree := p.parseExpression(PREC_LOWEST)
 
-	if node.Value != 10 {
-		t.Fatalf("Wrong integer value: expected 10, got %d", node.Value)
-	}
+	checkInteger(t, tree, 10)
 }
 
 func TestParseString(t *testing.T) {
 	p := New(lexer.New("\"hello\\n\""))
 
-	tree := p.parseExpression()
+	tree := p.parseExpression(PREC_LOWEST)
 	node, ok := tree.(*StringNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *StringNode, got %T", tree)
@@ -36,21 +30,15 @@ func TestParseString(t *testing.T) {
 func TestParseSymbol(t *testing.T) {
 	p := New(lexer.New("foo"))
 
-	tree := p.parseExpression()
-	node, ok := tree.(*SymbolNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *SymbolNode, got %T", tree)
-	}
+	tree := p.parseExpression(PREC_LOWEST)
 
-	if node.Value != "foo" {
-		t.Fatalf("Wrong symbol value: expected foo, got %s", node.Value)
-	}
+	checkSymbol(t, tree, "foo")
 }
 
 func TestParseBool(t *testing.T) {
 	p := New(lexer.New("true"))
 
-	tree := p.parseExpression()
+	tree := p.parseExpression(PREC_LOWEST)
 	node, ok := tree.(*BoolNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *BoolNode, got %T", tree)
@@ -74,14 +62,7 @@ func TestParseLet(t *testing.T) {
 		t.Fatalf("Wrong destination value: expected x, got %s", node.Destination.Value)
 	}
 
-	v, ok := node.Value.(*IntegerNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v)
-	}
-
-	if v.Value != 10 {
-		t.Fatalf("Wrong value: expected 10, got %d", v.Value)
-	}
+	checkInteger(t, node.Value, 10)
 }
 
 func TestParseTwoLets(t *testing.T) {
@@ -102,14 +83,7 @@ func TestParseTwoLets(t *testing.T) {
 		t.Fatalf("Wrong destination value: expected x, got %s", stmt1.Destination.Value)
 	}
 
-	v, ok := stmt1.Value.(*IntegerNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v)
-	}
-
-	if v.Value != 10 {
-		t.Fatalf("Wrong value: expected 10, got %d", v.Value)
-	}
+	checkInteger(t, stmt1.Value, 10)
 
 	stmt2, ok := tree.Statements[1].(*LetNode)
 	if !ok {
@@ -121,12 +95,40 @@ func TestParseTwoLets(t *testing.T) {
 		t.Fatalf("Wrong destination value: expected x, got %s", stmt2.Destination.Value)
 	}
 
-	v2, ok := stmt2.Value.(*IntegerNode)
+	checkInteger(t, stmt2.Value, 20)
+}
+
+func TestParseSimpleArithmetic(t *testing.T) {
+	p := New(lexer.New("5 + x"))
+
+	tree := p.parseExpression(PREC_LOWEST)
+	node, ok := tree.(*InfixNode)
 	if !ok {
-		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v2)
+		t.Fatalf("Wrong AST type: expected *InfixNode, got %T", tree)
 	}
 
-	if v2.Value != 20 {
-		t.Fatalf("Wrong value: expected 10, got %d", v2.Value)
+	checkInteger(t, node.Left, 5)
+	checkSymbol(t, node.Right, "x")
+}
+
+func checkInteger(t *testing.T, n Node, v int64) {
+	intNode, ok := n.(*IntegerNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", n)
+	}
+
+	if intNode.Value != v {
+		t.Fatalf("Wrong value for integer: expected %d, got %d", v, intNode.Value)
+	}
+}
+
+func checkSymbol(t *testing.T, n Node, v string) {
+	symNode, ok := n.(*SymbolNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *SymbolNode, got %T", n)
+	}
+
+	if symNode.Value != v {
+		t.Fatalf("Wrong value for symbol: expected %s, got %s", v, symNode.Value)
 	}
 }

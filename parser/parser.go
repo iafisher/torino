@@ -75,7 +75,7 @@ func (p *Parser) parseStatement() Statement {
 	if p.checkCurToken(lexer.TOKEN_LET) {
 		return p.parseLetStatement()
 	} else {
-		return &ExpressionStatement{p.parseExpression()}
+		return &ExpressionStatement{p.parseExpression(PREC_LOWEST)}
 	}
 }
 
@@ -88,15 +88,35 @@ func (p *Parser) parseLetStatement() Statement {
 			panic("parseLetStatement - expected =")
 		}
 		p.nextToken()
-		v := p.parseExpression()
-		p.nextToken()
+		v := p.parseExpression(PREC_LOWEST)
 		return &LetNode{dest, v}
 	} else {
 		panic("parseLetStatement - expected symbol")
 	}
 }
 
-func (p *Parser) parseExpression() Expression {
+func (p *Parser) parseExpression(precedence int) Expression {
+	left := p.parsePrefix()
+	p.nextToken()
+
+	for {
+		// Keep consuming infix operators until we hit either a non-infix token or an
+		// infix operator with a lower precedence.
+		if infixPrecedence, ok := precedenceMap[p.curToken.Type]; ok {
+			if precedence < infixPrecedence {
+				left = p.parseInfix(left, getPrecedence(p.curToken.Type))
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return left
+}
+
+func (p *Parser) parsePrefix() Expression {
 	if p.checkCurToken(lexer.TOKEN_INT) {
 		v, err := strconv.ParseInt(p.curToken.Value, 10, 64)
 		if err != nil {
@@ -116,6 +136,13 @@ func (p *Parser) parseExpression() Expression {
 	}
 }
 
+func (p *Parser) parseInfix(left Expression, precedence int) Expression {
+	operator := p.curToken.Value
+	p.nextToken()
+	right := p.parseExpression(precedence)
+	return &InfixNode{operator, left, right}
+}
+
 func (p *Parser) checkCurToken(expectedType string) bool {
 	return p.curToken.Type == expectedType
 }
@@ -123,4 +150,28 @@ func (p *Parser) checkCurToken(expectedType string) bool {
 func (p *Parser) nextToken() *lexer.Token {
 	p.curToken = p.lexer.NextToken()
 	return p.curToken
+}
+
+func getPrecedence(tokType string) int {
+	if prec, ok := precedenceMap[tokType]; ok {
+		return prec
+	} else {
+		return PREC_LOWEST
+	}
+}
+
+const (
+	_ int = iota
+	PREC_LOWEST
+	PREC_ADD_SUB
+	PREC_MUL_DIV
+	PREC_PREFIX
+	PREC_CALL
+)
+
+var precedenceMap = map[string]int{
+	lexer.TOKEN_PLUS:     PREC_ADD_SUB,
+	lexer.TOKEN_MINUS:    PREC_ADD_SUB,
+	lexer.TOKEN_ASTERISK: PREC_MUL_DIV,
+	lexer.TOKEN_SLASH:    PREC_MUL_DIV,
 }
