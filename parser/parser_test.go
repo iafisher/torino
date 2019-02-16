@@ -128,6 +128,19 @@ func TestParseArithmeticPrecedence(t *testing.T) {
 	checkInteger(t, left.Right, 2)
 }
 
+func TestParseParentheses(t *testing.T) {
+	p := New(lexer.New("5 * (2 + 4)"))
+
+	tree := p.parseExpression(PREC_LOWEST)
+
+	node := checkInfix(t, tree, "*")
+	checkInteger(t, node.Left, 5)
+
+	right := checkInfix(t, node.Right, "+")
+	checkInteger(t, right.Left, 2)
+	checkInteger(t, right.Right, 4)
+}
+
 func checkInteger(t *testing.T, n Node, v int64) {
 	intNode, ok := n.(*IntegerNode)
 	if !ok {

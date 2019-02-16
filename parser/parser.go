@@ -131,6 +131,14 @@ func (p *Parser) parsePrefix() Expression {
 		return &BoolNode{true}
 	} else if p.checkCurToken(lexer.TOKEN_FALSE) {
 		return &BoolNode{false}
+	} else if p.checkCurToken(lexer.TOKEN_LPAREN) {
+		p.nextToken()
+		expr := p.parseExpression(PREC_LOWEST)
+		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
+			panic("parseExpression - expected )")
+		}
+		p.nextToken()
+		return expr
 	} else {
 		panic("parseExpression - unexpected token")
 	}
