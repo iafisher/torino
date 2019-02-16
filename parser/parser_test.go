@@ -107,8 +107,25 @@ func TestParseSimpleArithmetic(t *testing.T) {
 		t.Fatalf("Wrong AST type: expected *InfixNode, got %T", tree)
 	}
 
+	if node.Op != "+" {
+		t.Fatalf("Wrong operator: expected +, got %s", node.Op)
+	}
+
 	checkInteger(t, node.Left, 5)
 	checkSymbol(t, node.Right, "x")
+}
+
+func TestParseArithmeticPrecedence(t *testing.T) {
+	p := New(lexer.New("5 * 2 + 4"))
+
+	tree := p.parseExpression(PREC_LOWEST)
+
+	node := checkInfix(t, tree, "+")
+	checkInteger(t, node.Right, 4)
+
+	left := checkInfix(t, node.Left, "*")
+	checkInteger(t, left.Left, 5)
+	checkInteger(t, left.Right, 2)
 }
 
 func checkInteger(t *testing.T, n Node, v int64) {
@@ -131,4 +148,17 @@ func checkSymbol(t *testing.T, n Node, v string) {
 	if symNode.Value != v {
 		t.Fatalf("Wrong value for symbol: expected %s, got %s", v, symNode.Value)
 	}
+}
+
+func checkInfix(t *testing.T, n Node, op string) *InfixNode {
+	infixNode, ok := n.(*InfixNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *InfixNode, got %T", n)
+	}
+
+	if infixNode.Op != op {
+		t.Fatalf("Wrong operator: expected %s, got %s", op, infixNode.Op)
+	}
+
+	return infixNode
 }
