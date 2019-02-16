@@ -70,7 +70,27 @@ func (p *Parser) parseBlock() *BlockNode {
 }
 
 func (p *Parser) parseStatement() Statement {
-	return p.parseExpression()
+	if p.checkCurToken(lexer.TOKEN_LET) {
+		return p.parseLetStatement()
+	} else {
+		return &ExpressionStatement{p.parseExpression()}
+	}
+}
+
+func (p *Parser) parseLetStatement() Statement {
+	p.nextToken()
+	if p.checkCurToken(lexer.TOKEN_SYMBOL) {
+		dest := &SymbolNode{p.curToken.Value}
+		p.nextToken()
+		if !p.checkCurToken(lexer.TOKEN_ASSIGN) {
+			panic("parseLetStatement - expected =")
+		}
+		p.nextToken()
+		v := p.parseExpression()
+		return &LetNode{dest, v}
+	} else {
+		panic("parseLetStatement - expected symbol")
+	}
 }
 
 func (p *Parser) parseExpression() Expression {

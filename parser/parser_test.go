@@ -60,3 +60,26 @@ func TestParseBool(t *testing.T) {
 		t.Fatalf("Wrong boolean value: expected true, got false")
 	}
 }
+
+func TestParseLet(t *testing.T) {
+	p := New(lexer.New("let x = 10"))
+
+	tree := p.parseStatement()
+	node, ok := tree.(*LetNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *LetNode, got %T", tree)
+	}
+
+	if node.Destination.Value != "x" {
+		t.Fatalf("Wrong destination value: expected x, got %s", node.Destination.Value)
+	}
+
+	v, ok := node.Value.(*IntegerNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v)
+	}
+
+	if v.Value != 10 {
+		t.Fatalf("Wrong value: expected 10, got %d", v.Value)
+	}
+}
