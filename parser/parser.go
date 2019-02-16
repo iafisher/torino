@@ -59,7 +59,9 @@ func (p *Parser) parseBlock() *BlockNode {
 		stmt := p.parseStatement()
 		statements = append(statements, stmt)
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
-			continue
+			for p.checkCurToken(lexer.TOKEN_NEWLINE) {
+				p.nextToken()
+			}
 		} else if p.checkCurToken(lexer.TOKEN_EOF) {
 			break
 		} else {
@@ -87,6 +89,7 @@ func (p *Parser) parseLetStatement() Statement {
 		}
 		p.nextToken()
 		v := p.parseExpression()
+		p.nextToken()
 		return &LetNode{dest, v}
 	} else {
 		panic("parseLetStatement - expected symbol")

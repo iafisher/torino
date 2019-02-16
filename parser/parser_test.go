@@ -83,3 +83,50 @@ func TestParseLet(t *testing.T) {
 		t.Fatalf("Wrong value: expected 10, got %d", v.Value)
 	}
 }
+
+func TestParseTwoLets(t *testing.T) {
+	p := New(lexer.New("let x = 10\nlet y = 20"))
+
+	tree := p.Parse()
+	if len(tree.Statements) != 2 {
+		t.Fatalf("Expected 2 statements, got %d", len(tree.Statements))
+	}
+
+	stmt1, ok := tree.Statements[0].(*LetNode)
+	if !ok {
+		t.Fatalf("Wrong AST type for first statement: expected *LetNode, got %T",
+			tree.Statements[0])
+	}
+
+	if stmt1.Destination.Value != "x" {
+		t.Fatalf("Wrong destination value: expected x, got %s", stmt1.Destination.Value)
+	}
+
+	v, ok := stmt1.Value.(*IntegerNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v)
+	}
+
+	if v.Value != 10 {
+		t.Fatalf("Wrong value: expected 10, got %d", v.Value)
+	}
+
+	stmt2, ok := tree.Statements[1].(*LetNode)
+	if !ok {
+		t.Fatalf("Wrong AST type for second statement: expected *LetNode, got %T",
+			tree.Statements[1])
+	}
+
+	if stmt2.Destination.Value != "y" {
+		t.Fatalf("Wrong destination value: expected x, got %s", stmt2.Destination.Value)
+	}
+
+	v2, ok := stmt2.Value.(*IntegerNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", v2)
+	}
+
+	if v2.Value != 20 {
+		t.Fatalf("Wrong value: expected 10, got %d", v2.Value)
+	}
+}
