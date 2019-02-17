@@ -35,6 +35,13 @@ type InfixNode struct {
 
 func (n *InfixNode) expressionNode() {}
 
+type CallNode struct {
+	Func    Expression
+	Arglist []Expression
+}
+
+func (n *CallNode) expressionNode() {}
+
 type IntegerNode struct {
 	Value int64
 }

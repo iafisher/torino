@@ -33,6 +33,7 @@ maparg  := expr COLON expr
 package parser
 
 import (
+	"fmt"
 	"github.com/iafisher/torino/lexer"
 	"strconv"
 )
@@ -65,7 +66,7 @@ func (p *Parser) parseBlock() *BlockNode {
 		} else if p.checkCurToken(lexer.TOKEN_EOF) {
 			break
 		} else {
-			panic("parseBlock - unexpected token")
+			panic(fmt.Sprintf("parseBlock - unexpected token %s", p.curToken.Type))
 		}
 	}
 	return &BlockNode{statements}
@@ -104,7 +105,13 @@ func (p *Parser) parseExpression(precedence int) Expression {
 		// infix operator with a lower precedence.
 		if infixPrecedence, ok := precedenceMap[p.curToken.Type]; ok {
 			if precedence < infixPrecedence {
-				left = p.parseInfix(left, getPrecedence(p.curToken.Type))
+				if p.curToken.Type == lexer.TOKEN_LPAREN {
+					p.nextToken()
+					arglist := p.parseArglist()
+					left = &CallNode{left, arglist}
+				} else {
+					left = p.parseInfix(left, getPrecedence(p.curToken.Type))
+				}
 			} else {
 				break
 			}
@@ -140,7 +147,7 @@ func (p *Parser) parsePrefix() Expression {
 		p.nextToken()
 		return expr
 	} else {
-		panic("parseExpression - unexpected token")
+		panic(fmt.Sprintf("parseExpression - unexpected token %s", p.curToken.Type))
 	}
 }
 
@@ -149,6 +156,30 @@ func (p *Parser) parseInfix(left Expression, precedence int) Expression {
 	p.nextToken()
 	right := p.parseExpression(precedence)
 	return &InfixNode{operator, left, right}
+}
+
+func (p *Parser) parseArglist() []Expression {
+	arglist := []Expression{}
+	// Special case for empty arglist
+	if p.checkCurToken(lexer.TOKEN_RPAREN) {
+		p.nextToken()
+		return arglist
+	}
+
+	for {
+		expr := p.parseExpression(PREC_LOWEST)
+		arglist = append(arglist, expr)
+
+		if p.checkCurToken(lexer.TOKEN_COMMA) {
+			p.nextToken()
+		} else if p.checkCurToken(lexer.TOKEN_RPAREN) {
+			p.nextToken()
+			break
+		} else {
+			panic(fmt.Sprintf("parseArglist - unexpected token %s", p.curToken.Type))
+		}
+	}
+	return arglist
 }
 
 func (p *Parser) checkCurToken(expectedType string) bool {
@@ -182,4 +213,5 @@ var precedenceMap = map[string]int{
 	lexer.TOKEN_MINUS:    PREC_ADD_SUB,
 	lexer.TOKEN_ASTERISK: PREC_MUL_DIV,
 	lexer.TOKEN_SLASH:    PREC_MUL_DIV,
+	lexer.TOKEN_LPAREN:   PREC_CALL,
 }
