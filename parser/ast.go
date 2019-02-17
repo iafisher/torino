@@ -11,7 +11,7 @@ type Statement interface {
 }
 
 type BlockNode struct {
-	Statements []Node
+	Statements []Statement
 }
 
 type ExpressionStatement struct {

@@ -6,17 +6,14 @@ import (
 )
 
 func TestParseInteger(t *testing.T) {
-	p := New(lexer.New("10"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "10")
 
 	checkInteger(t, tree, 10)
 }
 
 func TestParseString(t *testing.T) {
-	p := New(lexer.New("\"hello\\n\""))
+	tree := parseExpressionHelper(t, "\"hello\\n\"")
 
-	tree := p.parseExpression(PREC_LOWEST)
 	node, ok := tree.(*StringNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *StringNode, got %T", tree)
@@ -28,17 +25,14 @@ func TestParseString(t *testing.T) {
 }
 
 func TestParseSymbol(t *testing.T) {
-	p := New(lexer.New("foo"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "foo")
 
 	checkSymbol(t, tree, "foo")
 }
 
 func TestParseBool(t *testing.T) {
-	p := New(lexer.New("true"))
+	tree := parseExpressionHelper(t, "true")
 
-	tree := p.parseExpression(PREC_LOWEST)
 	node, ok := tree.(*BoolNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *BoolNode, got %T", tree)
@@ -50,9 +44,8 @@ func TestParseBool(t *testing.T) {
 }
 
 func TestParseLet(t *testing.T) {
-	p := New(lexer.New("let x = 10"))
+	tree := parseStatementHelper(t, "let x = 10")
 
-	tree := p.parseStatement()
 	node, ok := tree.(*LetNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *LetNode, got %T", tree)
@@ -99,9 +92,8 @@ func TestParseTwoLets(t *testing.T) {
 }
 
 func TestParseSimpleArithmetic(t *testing.T) {
-	p := New(lexer.New("5 + x"))
+	tree := parseExpressionHelper(t, "5 + x")
 
-	tree := p.parseExpression(PREC_LOWEST)
 	node, ok := tree.(*InfixNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *InfixNode, got %T", tree)
@@ -116,9 +108,7 @@ func TestParseSimpleArithmetic(t *testing.T) {
 }
 
 func TestParseArithmeticPrecedence(t *testing.T) {
-	p := New(lexer.New("5 * 2 + 4"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "5 * 2 + 4")
 
 	node := checkInfix(t, tree, "+")
 	checkInteger(t, node.Right, 4)
@@ -129,9 +119,7 @@ func TestParseArithmeticPrecedence(t *testing.T) {
 }
 
 func TestParseParentheses(t *testing.T) {
-	p := New(lexer.New("5 * (2 + 4)"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "5 * (2 + 4)")
 
 	node := checkInfix(t, tree, "*")
 	checkInteger(t, node.Left, 5)
@@ -142,9 +130,7 @@ func TestParseParentheses(t *testing.T) {
 }
 
 func TestParseParentheses2(t *testing.T) {
-	p := New(lexer.New("(2 + 4) * 5"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "(2 + 4) * 5")
 
 	node := checkInfix(t, tree, "*")
 	checkInteger(t, node.Right, 5)
@@ -155,26 +141,20 @@ func TestParseParentheses2(t *testing.T) {
 }
 
 func TestParseCallExpression(t *testing.T) {
-	p := New(lexer.New("f(x)"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "f(x)")
 
 	callNode := checkCall(t, tree, "f", 1)
 	checkSymbol(t, callNode.Arglist[0], "x")
 }
 
 func TestParseCallExpressionWithNoArgs(t *testing.T) {
-	p := New(lexer.New("f()"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "f()")
 
 	checkCall(t, tree, "f", 0)
 }
 
 func TestParseComplexCallExpression(t *testing.T) {
-	p := New(lexer.New("7 * add(4 + 2, x - 1) / 10"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "7 * add(4 + 2, x - 1) / 10")
 
 	divNode := checkInfix(t, tree, "/")
 	checkInteger(t, divNode.Right, 10)
@@ -194,9 +174,7 @@ func TestParseComplexCallExpression(t *testing.T) {
 }
 
 func TestParseCallExpressionWithNonSymbol(t *testing.T) {
-	p := New(lexer.New("(x + y)()"))
-
-	tree := p.parseExpression(PREC_LOWEST)
+	tree := parseExpressionHelper(t, "(x + y)()")
 
 	callNode := checkCall(t, tree, "", 0)
 	addNode := checkInfix(t, callNode.Func, "+")
@@ -205,9 +183,8 @@ func TestParseCallExpressionWithNonSymbol(t *testing.T) {
 }
 
 func TestParseForLoop(t *testing.T) {
-	p := New(lexer.New("for c in string {\nprint(c)\n}"))
+	tree := parseStatementHelper(t, "for c in string {\nprint(c)\n}")
 
-	tree := p.parseStatement()
 	node, ok := tree.(*ForNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *ForNode, got %T", tree)
@@ -232,6 +209,40 @@ func TestParseForLoop(t *testing.T) {
 }
 
 // Helper functions
+
+func parseHelper(input string) *BlockNode {
+	p := New(lexer.New(input))
+	return p.Parse()
+}
+
+func parseExpressionHelper(t *testing.T, input string) Expression {
+	return extractExpression(t, parseHelper(input))
+}
+
+func parseStatementHelper(t *testing.T, input string) Statement {
+	return extractStatement(t, parseHelper(input))
+}
+
+func extractExpression(t *testing.T, bn *BlockNode) Expression {
+	if len(bn.Statements) != 1 {
+		t.Fatalf("Wrong number of statements: expected 1, got %d", len(bn.Statements))
+	}
+
+	eStmt, ok := bn.Statements[0].(*ExpressionStatement)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ExpressionStatement, got %T",
+			bn.Statements[0])
+	}
+
+	return eStmt.Expr
+}
+
+func extractStatement(t *testing.T, bn *BlockNode) Statement {
+	if len(bn.Statements) != 1 {
+		t.Fatalf("Wrong number of statements: expected 1, got %d", len(bn.Statements))
+	}
+	return bn.Statements[0]
+}
 
 func checkInteger(t *testing.T, n Node, v int64) {
 	intNode, ok := n.(*IntegerNode)

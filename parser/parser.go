@@ -55,7 +55,7 @@ func (p *Parser) Parse() *BlockNode {
 }
 
 func (p *Parser) parseBlock() *BlockNode {
-	statements := []Node{}
+	statements := []Statement{}
 	for {
 		stmt := p.parseStatement()
 		statements = append(statements, stmt)
