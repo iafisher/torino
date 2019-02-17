@@ -144,7 +144,6 @@ func (p *Parser) parsePrefix() Expression {
 		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
 			panic("parseExpression - expected )")
 		}
-		p.nextToken()
 		return expr
 	} else {
 		panic(fmt.Sprintf("parseExpression - unexpected token %s", p.curToken.Type))

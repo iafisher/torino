@@ -141,6 +141,19 @@ func TestParseParentheses(t *testing.T) {
 	checkInteger(t, right.Right, 4)
 }
 
+func TestParseParentheses2(t *testing.T) {
+	p := New(lexer.New("(2 + 4) * 5"))
+
+	tree := p.parseExpression(PREC_LOWEST)
+
+	node := checkInfix(t, tree, "*")
+	checkInteger(t, node.Right, 5)
+
+	left := checkInfix(t, node.Left, "+")
+	checkInteger(t, left.Left, 2)
+	checkInteger(t, left.Right, 4)
+}
+
 func TestParseCallExpression(t *testing.T) {
 	p := New(lexer.New("f(x)"))
 
@@ -178,6 +191,17 @@ func TestParseComplexCallExpression(t *testing.T) {
 	subNode := checkInfix(t, callNode.Arglist[1], "-")
 	checkSymbol(t, subNode.Left, "x")
 	checkInteger(t, subNode.Right, 1)
+}
+
+func TestParseCallExpressionWithNonSymbol(t *testing.T) {
+	p := New(lexer.New("(x + y)()"))
+
+	tree := p.parseExpression(PREC_LOWEST)
+
+	callNode := checkCall(t, tree, "", 0)
+	addNode := checkInfix(t, callNode.Func, "+")
+	checkSymbol(t, addNode.Left, "x")
+	checkSymbol(t, addNode.Right, "y")
 }
 
 func checkInteger(t *testing.T, n Node, v int64) {
@@ -221,7 +245,9 @@ func checkCall(t *testing.T, n Node, sym string, nargs int) *CallNode {
 		t.Fatalf("Wrong AST type: expected *CallNode, got %T", n)
 	}
 
-	checkSymbol(t, callNode.Func, sym)
+	if sym != "" {
+		checkSymbol(t, callNode.Func, sym)
+	}
 
 	if len(callNode.Arglist) != nargs {
 		t.Fatalf("Wrong number of args: expected %d, got %d", nargs, len(callNode.Arglist))
