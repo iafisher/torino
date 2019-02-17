@@ -204,6 +204,35 @@ func TestParseCallExpressionWithNonSymbol(t *testing.T) {
 	checkSymbol(t, addNode.Right, "y")
 }
 
+func TestParseForLoop(t *testing.T) {
+	p := New(lexer.New("for c in string {\nprint(c)\n}"))
+
+	tree := p.parseStatement()
+	node, ok := tree.(*ForNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ForNode, got %T", tree)
+	}
+
+	checkSymbol(t, node.Symbol, "c")
+	checkSymbol(t, node.Iter, "string")
+
+	if len(node.Block.Statements) != 1 {
+		t.Fatalf("Wrong number of statements in block: expected 1, got %d",
+			len(node.Block.Statements))
+	}
+
+	eStmt, ok := node.Block.Statements[0].(*ExpressionStatement)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ExpressionStatement, got %T",
+			node.Block.Statements[0])
+	}
+
+	callNode := checkCall(t, eStmt.Expr, "print", 1)
+	checkSymbol(t, callNode.Arglist[0], "c")
+}
+
+// Helper functions
+
 func checkInteger(t *testing.T, n Node, v int64) {
 	intNode, ok := n.(*IntegerNode)
 	if !ok {

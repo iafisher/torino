@@ -3,22 +3,22 @@
 start := block
 
 block := (stmt NEWLINE)*
-stmt  := let | fn | for | while | if | break | return | expr
+stmt  := let | fn | for | while | if | break | continue | return | expr
 
-let    := LET SYMBOL ASSIGN expr
-fn     := FN SYMBOL LPAREN params? RPAREN brace-block
-for    := FOR SYMBOL IN expr brace-block
-while  := WHILE expr brace-block
-if     := IF expr brace-block elif* else?
-elif   := ELIF expr brace-block
-else   := ELSE brace-block
-break  := BREAK
-return := RETURN expr?
+let      := LET SYMBOL ASSIGN expr
+fn       := FN SYMBOL LPAREN params? RPAREN brace-block
+for      := FOR SYMBOL IN expr brace-block
+while    := WHILE expr brace-block
+if       := IF expr brace-block elif* else?
+elif     := ELIF expr brace-block
+else     := ELSE brace-block
+break    := BREAK
+continue := CONTINUE
+return   := RETURN expr?
 
 brace-block := LBRACE NEWLINE block RBRACE
 
-expr  := infix | call | pexpr | list | map
-       | INT | STRING | SYMBOL | TRUE | FALSE
+expr  := infix | call | pexpr | list | map | INT | STRING | SYMBOL | TRUE | FALSE
 pexpr := LPAREN expr RPAREN
 infix := expr OP expr
 call  := SYMBOL LPAREN args? RPAREN
@@ -59,14 +59,19 @@ func (p *Parser) parseBlock() *BlockNode {
 	for {
 		stmt := p.parseStatement()
 		statements = append(statements, stmt)
+
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
 			for p.checkCurToken(lexer.TOKEN_NEWLINE) {
 				p.nextToken()
 			}
-		} else if p.checkCurToken(lexer.TOKEN_EOF) {
+		} else if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
 			break
 		} else {
 			panic(fmt.Sprintf("parseBlock - unexpected token %s", p.curToken.Type))
+		}
+
+		if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
+			break
 		}
 	}
 	return &BlockNode{statements}
@@ -75,6 +80,8 @@ func (p *Parser) parseBlock() *BlockNode {
 func (p *Parser) parseStatement() Statement {
 	if p.checkCurToken(lexer.TOKEN_LET) {
 		return p.parseLetStatement()
+	} else if p.checkCurToken(lexer.TOKEN_FOR) {
+		return p.parseForStatement()
 	} else {
 		return &ExpressionStatement{p.parseExpression(PREC_LOWEST)}
 	}
@@ -93,6 +100,23 @@ func (p *Parser) parseLetStatement() Statement {
 		return &LetNode{dest, v}
 	} else {
 		panic("parseLetStatement - expected symbol")
+	}
+}
+
+func (p *Parser) parseForStatement() Statement {
+	p.nextToken()
+	if p.checkCurToken(lexer.TOKEN_SYMBOL) {
+		sym := &SymbolNode{p.curToken.Value}
+		p.nextToken()
+		if !p.checkCurToken(lexer.TOKEN_IN) {
+			panic("parseForStatement - expected in")
+		}
+		p.nextToken()
+		iter := p.parseExpression(PREC_LOWEST)
+		body := p.parseBracedBlock()
+		return &ForNode{sym, iter, body}
+	} else {
+		panic("parseForStatement - expected symbol")
 	}
 }
 
@@ -127,7 +151,7 @@ func (p *Parser) parsePrefix() Expression {
 	if p.checkCurToken(lexer.TOKEN_INT) {
 		v, err := strconv.ParseInt(p.curToken.Value, 10, 64)
 		if err != nil {
-			panic("parseExpression - could not parse integer token")
+			panic("parsePrefix - could not parse integer token")
 		}
 		return &IntegerNode{v}
 	} else if p.checkCurToken(lexer.TOKEN_STRING) {
@@ -142,11 +166,11 @@ func (p *Parser) parsePrefix() Expression {
 		p.nextToken()
 		expr := p.parseExpression(PREC_LOWEST)
 		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
-			panic("parseExpression - expected )")
+			panic("parsePrefix - expected )")
 		}
 		return expr
 	} else {
-		panic(fmt.Sprintf("parseExpression - unexpected token %s", p.curToken.Type))
+		panic(fmt.Sprintf("parsePrefix - unexpected token %s", p.curToken.Type))
 	}
 }
 
@@ -179,6 +203,26 @@ func (p *Parser) parseArglist() []Expression {
 		}
 	}
 	return arglist
+}
+
+func (p *Parser) parseBracedBlock() *BlockNode {
+	if !p.checkCurToken(lexer.TOKEN_LBRACE) {
+		panic("parseBracedBlock - expected {")
+	}
+	p.nextToken()
+
+	for p.checkCurToken(lexer.TOKEN_NEWLINE) {
+		p.nextToken()
+	}
+
+	block := p.parseBlock()
+
+	if !p.checkCurToken(lexer.TOKEN_RBRACE) {
+		panic("parseBracedBlock - expected }")
+	}
+	p.nextToken()
+
+	return block
 }
 
 func (p *Parser) checkCurToken(expectedType string) bool {

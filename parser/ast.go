@@ -42,6 +42,14 @@ type CallNode struct {
 
 func (n *CallNode) expressionNode() {}
 
+type ForNode struct {
+	Symbol *SymbolNode
+	Iter   Expression
+	Block  *BlockNode
+}
+
+func (n *ForNode) statementNode() {}
+
 type IntegerNode struct {
 	Value int64
 }
