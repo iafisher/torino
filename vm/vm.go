@@ -69,6 +69,12 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "LE" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value <= right.Value})
+	} else if inst.Name == "AND" {
+		left, right := vm.popTwoBools()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value && right.Value})
+	} else if inst.Name == "OR" {
+		left, right := vm.popTwoBools()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value || right.Value})
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}
@@ -81,7 +87,13 @@ func (vm *VirtualMachine) popStack() data.TorinoValue {
 }
 
 func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt) {
-	leftInt := vm.popStack().(*data.TorinoInt)
-	rightInt := vm.popStack().(*data.TorinoInt)
-	return leftInt, rightInt
+	left := vm.popStack().(*data.TorinoInt)
+	right := vm.popStack().(*data.TorinoInt)
+	return left, right
+}
+
+func (vm *VirtualMachine) popTwoBools() (*data.TorinoBool, *data.TorinoBool) {
+	left := vm.popStack().(*data.TorinoBool)
+	right := vm.popStack().(*data.TorinoBool)
+	return left, right
 }

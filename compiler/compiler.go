@@ -48,6 +48,8 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoInt{v.Value}))
 	case *parser.SymbolNode:
 		return append(insts, NewInst("PUSH_NAME", &data.TorinoString{v.Value}))
+	case *parser.BoolNode:
+		return append(insts, NewInst("PUSH_CONST", &data.TorinoBool{v.Value}))
 	case *parser.InfixNode:
 		insts = append(insts, cmp.compileExpression(v.Right)...)
 		insts = append(insts, cmp.compileExpression(v.Left)...)
@@ -69,6 +71,10 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 			return append(insts, NewInst("GE"))
 		} else if v.Op == "<=" {
 			return append(insts, NewInst("LE"))
+		} else if v.Op == "and" {
+			return append(insts, NewInst("AND"))
+		} else if v.Op == "or" {
+			return append(insts, NewInst("OR"))
 		} else {
 			panic("compileExpression - unknown operator")
 		}
