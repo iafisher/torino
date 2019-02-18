@@ -25,16 +25,27 @@ func main() {
 		}
 
 		line := scanner.Text()
-		p := parser.New(lexer.New(line))
-		ast := p.Parse()
+		oneline(line, vm, env)
+	}
+}
 
-		cmp := compiler.New()
-		program := cmp.Compile(ast)
-
-		val := vm.Execute(program, env)
-		_, isNone := val.(*data.TorinoNone)
-		if !isNone {
-			fmt.Println(val.String())
+func oneline(text string, vm *vm.VirtualMachine, env *vm.Environment) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Println("Error:", err)
 		}
+	}()
+
+	p := parser.New(lexer.New(text))
+	ast := p.Parse()
+
+	cmp := compiler.New()
+	program := cmp.Compile(ast)
+
+	val := vm.Execute(program, env)
+	_, isNone := val.(*data.TorinoNone)
+	if !isNone {
+		fmt.Println(val.String())
 	}
 }
