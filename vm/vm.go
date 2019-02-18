@@ -75,6 +75,9 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "BINARY_OR" {
 		left, right := vm.popTwoBools()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value || right.Value})
+	} else if inst.Name == "UNARY_MINUS" {
+		arg := vm.popStack().(*data.TorinoInt)
+		vm.Stack = append(vm.Stack, &data.TorinoInt{-arg.Value})
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}

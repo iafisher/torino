@@ -6,10 +6,12 @@ Version: February 2019
 package compiler
 
 import (
+	"fmt"
 	"github.com/iafisher/torino/data"
 	"github.com/iafisher/torino/parser"
 )
 
+// TODO: I might not even need this struct.
 type Compiler struct {
 }
 
@@ -76,9 +78,17 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		} else if v.Op == "or" {
 			return append(insts, NewInst("BINARY_OR"))
 		} else {
-			panic("compileExpression - unknown operator")
+			panic(fmt.Sprintf("compileExpression - unknown infix operator %s", v.Op))
+		}
+	case *parser.PrefixNode:
+		insts = append(insts, cmp.compileExpression(v.Arg)...)
+		if v.Op == "-" {
+			return append(insts, NewInst("UNARY_MINUS"))
+		} else {
+			panic(fmt.Sprintf("compileExpression - unknown prefix operator %s", v.Op))
 		}
 	default:
-		panic("compileExpression - unknown expression type")
+		panic(fmt.Sprintf("compileExpression - unknown expression type %+v (%T)",
+			expr, expr))
 	}
 }
