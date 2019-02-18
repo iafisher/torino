@@ -38,7 +38,7 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		vm.Stack = append(vm.Stack, inst.Args[0])
 	} else if inst.Name == "STORE_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
-		env.Put(key, inst.Args[1])
+		env.Put(key, vm.popStack())
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		vm.Stack = append(vm.Stack, env.Get(key))
@@ -59,12 +59,14 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	}
 }
 
-func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt) {
-	left := vm.Stack[len(vm.Stack)-1]
-	right := vm.Stack[len(vm.Stack)-2]
-	vm.Stack = vm.Stack[:len(vm.Stack)-2]
+func (vm *VirtualMachine) popStack() data.TorinoValue {
+	ret := vm.Stack[len(vm.Stack)-1]
+	vm.Stack = vm.Stack[:len(vm.Stack)-1]
+	return ret
+}
 
-	leftInt := left.(*data.TorinoInt)
-	rightInt := right.(*data.TorinoInt)
+func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt) {
+	leftInt := vm.popStack().(*data.TorinoInt)
+	rightInt := vm.popStack().(*data.TorinoInt)
 	return leftInt, rightInt
 }
