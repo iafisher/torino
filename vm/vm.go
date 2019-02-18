@@ -43,15 +43,28 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		key := inst.Args[0].(*data.TorinoString).Value
 		vm.Stack = append(vm.Stack, env.Get(key))
 	} else if inst.Name == "ADD" {
-		left := vm.Stack[len(vm.Stack)-1]
-		right := vm.Stack[len(vm.Stack)-2]
-		vm.Stack = vm.Stack[:len(vm.Stack)-2]
-
-		leftInt := left.(*data.TorinoInt)
-		rightInt := right.(*data.TorinoInt)
-
-		vm.Stack = append(vm.Stack, &data.TorinoInt{leftInt.Value + rightInt.Value})
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value + right.Value})
+	} else if inst.Name == "SUB" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value - right.Value})
+	} else if inst.Name == "MUL" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value * right.Value})
+	} else if inst.Name == "DIV" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value / right.Value})
 	} else {
-		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s"))
+		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}
+}
+
+func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt) {
+	left := vm.Stack[len(vm.Stack)-1]
+	right := vm.Stack[len(vm.Stack)-2]
+	vm.Stack = vm.Stack[:len(vm.Stack)-2]
+
+	leftInt := left.(*data.TorinoInt)
+	rightInt := right.(*data.TorinoInt)
+	return leftInt, rightInt
 }
