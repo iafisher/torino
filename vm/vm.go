@@ -42,37 +42,37 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		vm.Stack = append(vm.Stack, env.Get(key))
-	} else if inst.Name == "ADD" {
+	} else if inst.Name == "BINARY_ADD" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value + right.Value})
-	} else if inst.Name == "SUB" {
+	} else if inst.Name == "BINARY_SUB" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value - right.Value})
-	} else if inst.Name == "MUL" {
+	} else if inst.Name == "BINARY_MUL" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value * right.Value})
-	} else if inst.Name == "DIV" {
+	} else if inst.Name == "BINARY_DIV" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value / right.Value})
-	} else if inst.Name == "EQ" {
+	} else if inst.Name == "BINARY_EQ" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value == right.Value})
-	} else if inst.Name == "GT" {
+	} else if inst.Name == "BINARY_GT" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value > right.Value})
-	} else if inst.Name == "LT" {
+	} else if inst.Name == "BINARY_LT" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value < right.Value})
-	} else if inst.Name == "GE" {
+	} else if inst.Name == "BINARY_GE" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value >= right.Value})
-	} else if inst.Name == "LE" {
+	} else if inst.Name == "BINARY_LE" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value <= right.Value})
-	} else if inst.Name == "AND" {
+	} else if inst.Name == "BINARY_AND" {
 		left, right := vm.popTwoBools()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value && right.Value})
-	} else if inst.Name == "OR" {
+	} else if inst.Name == "BINARY_OR" {
 		left, right := vm.popTwoBools()
 		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value || right.Value})
 	} else {

@@ -54,27 +54,27 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		insts = append(insts, cmp.compileExpression(v.Right)...)
 		insts = append(insts, cmp.compileExpression(v.Left)...)
 		if v.Op == "+" {
-			return append(insts, NewInst("ADD"))
+			return append(insts, NewInst("BINARY_ADD"))
 		} else if v.Op == "-" {
-			return append(insts, NewInst("SUB"))
+			return append(insts, NewInst("BINARY_SUB"))
 		} else if v.Op == "*" {
-			return append(insts, NewInst("MUL"))
+			return append(insts, NewInst("BINARY_MUL"))
 		} else if v.Op == "/" {
-			return append(insts, NewInst("DIV"))
+			return append(insts, NewInst("BINARY_DIV"))
 		} else if v.Op == "==" {
-			return append(insts, NewInst("EQ"))
+			return append(insts, NewInst("BINARY_EQ"))
 		} else if v.Op == ">" {
-			return append(insts, NewInst("GT"))
+			return append(insts, NewInst("BINARY_GT"))
 		} else if v.Op == "<" {
-			return append(insts, NewInst("LT"))
+			return append(insts, NewInst("BINARY_LT"))
 		} else if v.Op == ">=" {
-			return append(insts, NewInst("GE"))
+			return append(insts, NewInst("BINARY_GE"))
 		} else if v.Op == "<=" {
-			return append(insts, NewInst("LE"))
+			return append(insts, NewInst("BINARY_LE"))
 		} else if v.Op == "and" {
-			return append(insts, NewInst("AND"))
+			return append(insts, NewInst("BINARY_AND"))
 		} else if v.Op == "or" {
-			return append(insts, NewInst("OR"))
+			return append(insts, NewInst("BINARY_OR"))
 		} else {
 			panic("compileExpression - unknown operator")
 		}
