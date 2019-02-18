@@ -140,6 +140,17 @@ func TestParseParentheses2(t *testing.T) {
 	checkInteger(t, left.Right, 4)
 }
 
+func TestParseBooleanOp(t *testing.T) {
+	tree := parseExpressionHelper(t, "false and false or true")
+
+	orNode := checkInfix(t, tree, "or")
+	checkBool(t, orNode.Right, true)
+
+	andNode := checkInfix(t, orNode.Left, "and")
+	checkBool(t, andNode.Left, false)
+	checkBool(t, andNode.Right, false)
+}
+
 func TestParseCallExpression(t *testing.T) {
 	tree := parseExpressionHelper(t, "f(x)")
 
@@ -472,6 +483,17 @@ func checkInteger(t *testing.T, n Node, v int64) {
 
 	if intNode.Value != v {
 		t.Fatalf("Wrong value for integer: expected %d, got %d", v, intNode.Value)
+	}
+}
+
+func checkBool(t *testing.T, n Node, v bool) {
+	boolNode, ok := n.(*BoolNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *BoolNode, got %T", n)
+	}
+
+	if boolNode.Value != v {
+		t.Fatalf("Wrong value for boolean: expected %t, got %t", v, boolNode.Value)
 	}
 }
 

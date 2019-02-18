@@ -375,6 +375,8 @@ func getPrecedence(tokType string) int {
 const (
 	_ int = iota
 	PREC_LOWEST
+	PREC_OR
+	PREC_AND
 	PREC_CMP
 	PREC_ADD_SUB
 	PREC_MUL_DIV
@@ -393,4 +395,6 @@ var precedenceMap = map[string]int{
 	lexer.TOKEN_ASTERISK: PREC_MUL_DIV,
 	lexer.TOKEN_SLASH:    PREC_MUL_DIV,
 	lexer.TOKEN_LPAREN:   PREC_CALL,
+	lexer.TOKEN_AND:      PREC_AND,
+	lexer.TOKEN_OR:       PREC_OR,
 }
