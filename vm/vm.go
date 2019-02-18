@@ -38,10 +38,18 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		vm.Stack = append(vm.Stack, inst.Args[0])
 	} else if inst.Name == "STORE_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
+		_, ok := env.Get(key)
+		if ok {
+			panic(fmt.Sprintf("cannot redefine symbol %s", key))
+		}
 		env.Put(key, vm.popStack())
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
-		vm.Stack = append(vm.Stack, env.Get(key))
+		val, ok := env.Get(key)
+		if !ok {
+			panic(fmt.Sprintf("undefined symbol %s", key))
+		}
+		vm.Stack = append(vm.Stack, val)
 	} else if inst.Name == "BINARY_ADD" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value + right.Value})
