@@ -281,6 +281,74 @@ if x > 0 {
 	cmpNode := checkInfix(t, node.Clauses[0].Cond, ">")
 	checkSymbol(t, cmpNode.Left, "x")
 	checkInteger(t, cmpNode.Right, 0)
+
+	eqNode := checkInfix(t, node.Clauses[1].Cond, "==")
+	checkSymbol(t, eqNode.Left, "x")
+	checkInteger(t, eqNode.Right, 0)
+
+	if node.Else == nil {
+		t.Fatalf("Expected else clause, but there was not one")
+	}
+
+	if len(node.Else.Statements) != 0 {
+		t.Fatalf("Wrong number of statements in else clause: expected 0, got %d",
+			len(node.Else.Statements))
+	}
+}
+
+func TestParseIfNoElse(t *testing.T) {
+	input := `
+if x > 0 {
+} elif x == 0 {
+}
+`
+	tree := parseStatementHelper(t, input)
+	node, ok := tree.(*IfNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IfNode, got %T", tree)
+	}
+
+	if len(node.Clauses) != 2 {
+		t.Fatalf("Wrong number of if-elif clauses: expected 2, got %d",
+			len(node.Clauses))
+	}
+
+	cmpNode := checkInfix(t, node.Clauses[0].Cond, ">")
+	checkSymbol(t, cmpNode.Left, "x")
+	checkInteger(t, cmpNode.Right, 0)
+
+	eqNode := checkInfix(t, node.Clauses[1].Cond, "==")
+	checkSymbol(t, eqNode.Left, "x")
+	checkInteger(t, eqNode.Right, 0)
+
+	if node.Else != nil {
+		t.Fatalf("Expected no else clause, but there was one")
+	}
+}
+
+func TestParseJustIf(t *testing.T) {
+	input := `
+if x > 0 {
+}
+`
+	tree := parseStatementHelper(t, input)
+	node, ok := tree.(*IfNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IfNode, got %T", tree)
+	}
+
+	if len(node.Clauses) != 1 {
+		t.Fatalf("Wrong number of if-elif clauses: expected 1, got %d",
+			len(node.Clauses))
+	}
+
+	cmpNode := checkInfix(t, node.Clauses[0].Cond, ">")
+	checkSymbol(t, cmpNode.Left, "x")
+	checkInteger(t, cmpNode.Right, 0)
+
+	if node.Else != nil {
+		t.Fatalf("Expected no else clause, but there was one")
+	}
 }
 
 // Helper functions
