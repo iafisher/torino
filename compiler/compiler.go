@@ -33,6 +33,8 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 		return cmp.compileExpression(v.Expr)
 	case *parser.LetNode:
 		return cmp.compileLet(v)
+	case *parser.AssignNode:
+		return cmp.compileAssign(v)
 	default:
 		panic("compileStatement - unknown statement type")
 	}
@@ -41,6 +43,11 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 func (cmp *Compiler) compileLet(node *parser.LetNode) []*Instruction {
 	insts := cmp.compileExpression(node.Value)
 	return append(insts, NewInst("STORE_NAME", &data.TorinoString{node.Destination.Value}))
+}
+
+func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
+	insts := cmp.compileExpression(node.Value)
+	return append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
 }
 
 func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {

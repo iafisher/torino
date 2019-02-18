@@ -43,6 +43,13 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			panic(fmt.Sprintf("cannot redefine symbol %s", key))
 		}
 		env.Put(key, vm.popStack())
+	} else if inst.Name == "ASSIGN_NAME" {
+		key := inst.Args[0].(*data.TorinoString).Value
+		_, ok := env.Get(key)
+		if !ok {
+			panic(fmt.Sprintf("undefined symbol %s", key))
+		}
+		env.Put(key, vm.popStack())
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		val, ok := env.Get(key)
