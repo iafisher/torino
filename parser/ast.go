@@ -76,6 +76,12 @@ type WhileNode struct {
 
 func (n *WhileNode) statementNode() {}
 
+type ReturnNode struct {
+	Value Expression
+}
+
+func (n *ReturnNode) statementNode() {}
+
 type IntegerNode struct {
 	Value int64
 }

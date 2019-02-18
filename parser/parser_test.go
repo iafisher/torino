@@ -351,6 +351,28 @@ if x > 0 {
 	}
 }
 
+func TestParseReturn(t *testing.T) {
+	tree := parseStatementHelper(t, "return x")
+	node, ok := tree.(*ReturnNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ReturnNode, got %T", tree)
+	}
+
+	checkSymbol(t, node.Value, "x")
+}
+
+func TestParseReturnNoValue(t *testing.T) {
+	tree := parseStatementHelper(t, "return")
+	node, ok := tree.(*ReturnNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ReturnNode, got %T", tree)
+	}
+
+	if node.Value != nil {
+		t.Fatalf("Expected no return value, but there was one")
+	}
+}
+
 // Helper functions
 
 func parseHelper(input string) *BlockNode {

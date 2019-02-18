@@ -85,6 +85,8 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseWhileStatement()
 	} else if p.checkCurToken(lexer.TOKEN_IF) {
 		return p.parseIfStatement()
+	} else if p.checkCurToken(lexer.TOKEN_RETURN) {
+		return p.parseReturnStatement()
 	} else {
 		expr := p.parseExpression(PREC_LOWEST)
 		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
@@ -166,6 +168,15 @@ func (p *Parser) parseIfStatement() Statement {
 	}
 
 	return &IfNode{clauses, elseBody}
+}
+
+func (p *Parser) parseReturnStatement() Statement {
+	p.nextToken()
+	if p.checkCurToken(lexer.TOKEN_NEWLINE) || p.checkCurToken(lexer.TOKEN_EOF) {
+		return &ReturnNode{nil}
+	} else {
+		return &ReturnNode{p.parseExpression(PREC_LOWEST)}
+	}
 }
 
 func (p *Parser) parseExpression(precedence int) Expression {
