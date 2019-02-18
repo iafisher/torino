@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/iafisher/torino/compiler"
+	"github.com/iafisher/torino/data"
 	"github.com/iafisher/torino/lexer"
 	"github.com/iafisher/torino/parser"
 	"github.com/iafisher/torino/vm"
@@ -11,9 +12,11 @@ import (
 )
 
 func main() {
-	fmt.Println("The Torino programming language.")
+	fmt.Println("The Torino programming language.\n")
 
 	scanner := bufio.NewScanner(os.Stdin)
+	env := vm.NewEnv()
+	vm := vm.New()
 	for {
 		fmt.Print(">>> ")
 		scanned := scanner.Scan()
@@ -28,7 +31,10 @@ func main() {
 		cmp := compiler.New()
 		program := cmp.Compile(ast)
 
-		vm := vm.New()
-		vm.Execute(program)
+		val := vm.Execute(program, env)
+		_, isNone := val.(*data.TorinoNone)
+		if !isNone {
+			fmt.Println(val.String())
+		}
 	}
 }

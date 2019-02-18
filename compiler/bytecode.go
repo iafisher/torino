@@ -1,6 +1,8 @@
 package compiler
 
-type Instruction interface {
-	Name() string
-	Args() []int
+import "github.com/iafisher/torino/data"
+
+type Instruction struct {
+	Name string
+	Args []data.TorinoValue
 }

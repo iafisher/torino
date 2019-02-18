@@ -5,17 +5,53 @@ Version: February 2019
 */
 package vm
 
-import "github.com/iafisher/torino/compiler"
+import (
+	"fmt"
+	"github.com/iafisher/torino/compiler"
+	"github.com/iafisher/torino/data"
+)
 
 type VirtualMachine struct {
+	Stack []data.TorinoValue
 }
 
 func New() *VirtualMachine {
 	return &VirtualMachine{}
 }
 
-func (vm *VirtualMachine) Execute(program []compiler.Instruction) {
+func (vm *VirtualMachine) Execute(
+	program []*compiler.Instruction, env *Environment,
+) data.TorinoValue {
 	for _, inst := range program {
-		inst.Args()
+		vm.executeOne(inst, env)
+	}
+
+	if len(vm.Stack) > 0 {
+		return vm.Stack[len(vm.Stack)-1]
+	} else {
+		return &data.TorinoNone{}
+	}
+}
+
+func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) {
+	if inst.Name == "PUSH_CONST" {
+		vm.Stack = append(vm.Stack, inst.Args[0])
+	} else if inst.Name == "STORE_NAME" {
+		key := inst.Args[0].(*data.TorinoString).Value
+		env.Put(key, inst.Args[1])
+	} else if inst.Name == "PUSH_NAME" {
+		key := inst.Args[0].(*data.TorinoString).Value
+		vm.Stack = append(vm.Stack, env.Get(key))
+	} else if inst.Name == "ADD" {
+		left := vm.Stack[len(vm.Stack)-1]
+		right := vm.Stack[len(vm.Stack)-2]
+		vm.Stack = vm.Stack[:len(vm.Stack)-2]
+
+		leftInt := left.(*data.TorinoInt)
+		rightInt := right.(*data.TorinoInt)
+
+		vm.Stack = append(vm.Stack, &data.TorinoInt{leftInt.Value + rightInt.Value})
+	} else {
+		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s"))
 	}
 }

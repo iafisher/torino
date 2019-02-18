@@ -14,6 +14,6 @@ func New() *Compiler {
 	return &Compiler{}
 }
 
-func (cmp *Compiler) Compile(ast *parser.BlockNode) []Instruction {
-	return []Instruction{}
+func (cmp *Compiler) Compile(ast *parser.BlockNode) []*Instruction {
+	return []*Instruction{}
 }
