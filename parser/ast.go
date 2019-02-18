@@ -84,6 +84,14 @@ type WhileNode struct {
 
 func (n *WhileNode) statementNode() {}
 
+type BreakNode struct{}
+
+func (n *BreakNode) statementNode() {}
+
+type ContinueNode struct{}
+
+func (n *ContinueNode) statementNode() {}
+
 type ReturnNode struct {
 	Value Expression
 }

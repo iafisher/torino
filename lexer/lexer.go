@@ -17,19 +17,21 @@ func New(program string) *Lexer {
 }
 
 var keywords = map[string]string{
-	"and":    TOKEN_AND,
-	"elif":   TOKEN_ELIF,
-	"else":   TOKEN_ELSE,
-	"false":  TOKEN_FALSE,
-	"fn":     TOKEN_FN,
-	"for":    TOKEN_FOR,
-	"if":     TOKEN_IF,
-	"in":     TOKEN_IN,
-	"let":    TOKEN_LET,
-	"or":     TOKEN_OR,
-	"return": TOKEN_RETURN,
-	"true":   TOKEN_TRUE,
-	"while":  TOKEN_WHILE,
+	"and":      TOKEN_AND,
+	"break":    TOKEN_BREAK,
+	"continue": TOKEN_CONTINUE,
+	"elif":     TOKEN_ELIF,
+	"else":     TOKEN_ELSE,
+	"false":    TOKEN_FALSE,
+	"fn":       TOKEN_FN,
+	"for":      TOKEN_FOR,
+	"if":       TOKEN_IF,
+	"in":       TOKEN_IN,
+	"let":      TOKEN_LET,
+	"or":       TOKEN_OR,
+	"return":   TOKEN_RETURN,
+	"true":     TOKEN_TRUE,
+	"while":    TOKEN_WHILE,
 }
 
 func (l *Lexer) NextToken() *Token {

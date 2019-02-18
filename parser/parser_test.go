@@ -410,6 +410,24 @@ fn foo(x, y) {
 	checkSymbol(t, infixNode.Right, "y")
 }
 
+func TestParseBreakAndContinue(t *testing.T) {
+	tree := parseHelper("break\ncontinue")
+	if len(tree.Statements) != 2 {
+		t.Fatalf("Wrong number of statements: expected 2, got %d",
+			len(tree.Statements))
+	}
+
+	_, ok := tree.Statements[0].(*BreakNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *BreakNode, got %T", tree.Statements[0])
+	}
+
+	_, ok = tree.Statements[1].(*ContinueNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ContinueNode, got %T", tree.Statements[1])
+	}
+}
+
 // Helper functions
 
 func parseHelper(input string) *BlockNode {

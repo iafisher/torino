@@ -92,6 +92,12 @@ func (p *Parser) parseStatement(topLevel bool) Statement {
 			panic("parseStatement - function declarations must be at top level")
 		}
 		return p.parseFnStatement()
+	} else if p.checkCurToken(lexer.TOKEN_BREAK) {
+		p.nextToken()
+		return &BreakNode{}
+	} else if p.checkCurToken(lexer.TOKEN_CONTINUE) {
+		p.nextToken()
+		return &ContinueNode{}
 	} else {
 		expr := p.parseExpression(PREC_LOWEST)
 		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
