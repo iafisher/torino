@@ -52,13 +52,13 @@ func New(l *lexer.Lexer) *Parser {
 
 func (p *Parser) Parse() *BlockNode {
 	p.skipNewlines()
-	return p.parseBlock()
+	return p.parseBlock(true)
 }
 
-func (p *Parser) parseBlock() *BlockNode {
+func (p *Parser) parseBlock(topLevel bool) *BlockNode {
 	statements := []Statement{}
 	for {
-		stmt := p.parseStatement()
+		stmt := p.parseStatement(topLevel)
 		statements = append(statements, stmt)
 
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
@@ -76,7 +76,7 @@ func (p *Parser) parseBlock() *BlockNode {
 	return &BlockNode{statements}
 }
 
-func (p *Parser) parseStatement() Statement {
+func (p *Parser) parseStatement(topLevel bool) Statement {
 	if p.checkCurToken(lexer.TOKEN_LET) {
 		return p.parseLetStatement()
 	} else if p.checkCurToken(lexer.TOKEN_FOR) {
@@ -87,6 +87,11 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseIfStatement()
 	} else if p.checkCurToken(lexer.TOKEN_RETURN) {
 		return p.parseReturnStatement()
+	} else if p.checkCurToken(lexer.TOKEN_FN) {
+		if !topLevel {
+			panic("parseStatement - function declarations must be at top level")
+		}
+		return p.parseFnStatement()
 	} else {
 		expr := p.parseExpression(PREC_LOWEST)
 		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
@@ -179,6 +184,24 @@ func (p *Parser) parseReturnStatement() Statement {
 	}
 }
 
+func (p *Parser) parseFnStatement() Statement {
+	p.nextToken()
+	if !p.checkCurToken(lexer.TOKEN_SYMBOL) {
+		panic("parseFnStatement - expected symbol")
+	}
+	sym := &SymbolNode{p.curToken.Value}
+
+	p.nextToken()
+	if !p.checkCurToken(lexer.TOKEN_LPAREN) {
+		panic("parseFnStatement - expected (")
+	}
+	p.nextToken()
+	params := p.parseParamList()
+
+	body := p.parseBracedBlock()
+	return &FnNode{sym, params, body}
+}
+
 func (p *Parser) parseExpression(precedence int) Expression {
 	left := p.parsePrefix()
 	p.nextToken()
@@ -264,6 +287,34 @@ func (p *Parser) parseArglist() []Expression {
 	return arglist
 }
 
+func (p *Parser) parseParamList() []*SymbolNode {
+	paramlist := []*SymbolNode{}
+	// Special case for empty list
+	if p.checkCurToken(lexer.TOKEN_RPAREN) {
+		p.nextToken()
+		return paramlist
+	}
+
+	for {
+		if !p.checkCurToken(lexer.TOKEN_SYMBOL) {
+			panic(fmt.Sprintf("parseParamList - expected symbol, got %s",
+				p.curToken.Type))
+		}
+		paramlist = append(paramlist, &SymbolNode{p.curToken.Value})
+
+		p.nextToken()
+		if p.checkCurToken(lexer.TOKEN_COMMA) {
+			p.nextToken()
+		} else if p.checkCurToken(lexer.TOKEN_RPAREN) {
+			p.nextToken()
+			break
+		} else {
+			panic(fmt.Sprintf("parseParamList - unexpected token %s", p.curToken.Type))
+		}
+	}
+	return paramlist
+}
+
 func (p *Parser) parseBracedBlock() *BlockNode {
 	if !p.checkCurToken(lexer.TOKEN_LBRACE) {
 		panic("parseBracedBlock - expected {")
@@ -277,7 +328,7 @@ func (p *Parser) parseBracedBlock() *BlockNode {
 		return &BlockNode{[]Statement{}}
 	}
 
-	block := p.parseBlock()
+	block := p.parseBlock(false)
 
 	if !p.checkCurToken(lexer.TOKEN_RBRACE) {
 		panic("parseBracedBlock - expected }")

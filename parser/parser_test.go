@@ -373,6 +373,43 @@ func TestParseReturnNoValue(t *testing.T) {
 	}
 }
 
+func TestParseFunctionDeclaration(t *testing.T) {
+	input := `
+fn foo(x, y) {
+	return x + y
+}
+`
+	tree := parseStatementHelper(t, input)
+	node, ok := tree.(*FnNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *FnNode, got %T", tree)
+	}
+
+	checkSymbol(t, node.Symbol, "foo")
+
+	if len(node.Params) != 2 {
+		t.Fatalf("Wrong number of parameters: expected 2, got %d", len(node.Params))
+	}
+
+	checkSymbol(t, node.Params[0], "x")
+	checkSymbol(t, node.Params[1], "y")
+
+	if len(node.Body.Statements) != 1 {
+		t.Fatalf("Wrong number of statements in function body: expected 1, got %d",
+			len(node.Body.Statements))
+	}
+
+	returnNode, ok := node.Body.Statements[0].(*ReturnNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ReturnNode, got %T",
+			node.Body.Statements[0])
+	}
+
+	infixNode := checkInfix(t, returnNode.Value, "+")
+	checkSymbol(t, infixNode.Left, "x")
+	checkSymbol(t, infixNode.Right, "y")
+}
+
 // Helper functions
 
 func parseHelper(input string) *BlockNode {

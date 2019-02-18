@@ -27,6 +27,14 @@ type LetNode struct {
 
 func (n *LetNode) statementNode() {}
 
+type FnNode struct {
+	Symbol *SymbolNode
+	Params []*SymbolNode
+	Body   *BlockNode
+}
+
+func (n *FnNode) statementNode() {}
+
 type AssignNode struct {
 	Destination *SymbolNode
 	Value       Expression
