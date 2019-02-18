@@ -27,6 +27,13 @@ type LetNode struct {
 
 func (n *LetNode) statementNode() {}
 
+type AssignNode struct {
+	Destination *SymbolNode
+	Value       Expression
+}
+
+func (n *AssignNode) statementNode() {}
+
 type InfixNode struct {
 	Op    string
 	Left  Expression
@@ -49,6 +56,13 @@ type ForNode struct {
 }
 
 func (n *ForNode) statementNode() {}
+
+type WhileNode struct {
+	Cond  Expression
+	Block *BlockNode
+}
+
+func (n *WhileNode) statementNode() {}
 
 type IntegerNode struct {
 	Value int64

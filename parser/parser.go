@@ -82,8 +82,21 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseLetStatement()
 	} else if p.checkCurToken(lexer.TOKEN_FOR) {
 		return p.parseForStatement()
+	} else if p.checkCurToken(lexer.TOKEN_WHILE) {
+		return p.parseWhileStatement()
 	} else {
-		return &ExpressionStatement{p.parseExpression(PREC_LOWEST)}
+		expr := p.parseExpression(PREC_LOWEST)
+		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
+			sym, ok := expr.(*SymbolNode)
+			if !ok {
+				panic("parseStatement - cannot assign to non-symbol")
+			}
+			p.nextToken()
+			lhs := p.parseExpression(PREC_LOWEST)
+			return &AssignNode{sym, lhs}
+		} else {
+			return &ExpressionStatement{expr}
+		}
 	}
 }
 
@@ -118,6 +131,13 @@ func (p *Parser) parseForStatement() Statement {
 	} else {
 		panic("parseForStatement - expected symbol")
 	}
+}
+
+func (p *Parser) parseWhileStatement() Statement {
+	p.nextToken()
+	cond := p.parseExpression(PREC_LOWEST)
+	body := p.parseBracedBlock()
+	return &WhileNode{cond, body}
 }
 
 func (p *Parser) parseExpression(precedence int) Expression {
@@ -245,6 +265,7 @@ func getPrecedence(tokType string) int {
 const (
 	_ int = iota
 	PREC_LOWEST
+	PREC_CMP
 	PREC_ADD_SUB
 	PREC_MUL_DIV
 	PREC_PREFIX
@@ -252,6 +273,11 @@ const (
 )
 
 var precedenceMap = map[string]int{
+	lexer.TOKEN_EQ:       PREC_CMP,
+	lexer.TOKEN_GT:       PREC_CMP,
+	lexer.TOKEN_GE:       PREC_CMP,
+	lexer.TOKEN_LT:       PREC_CMP,
+	lexer.TOKEN_LE:       PREC_CMP,
 	lexer.TOKEN_PLUS:     PREC_ADD_SUB,
 	lexer.TOKEN_MINUS:    PREC_ADD_SUB,
 	lexer.TOKEN_ASTERISK: PREC_MUL_DIV,

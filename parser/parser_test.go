@@ -182,6 +182,20 @@ func TestParseCallExpressionWithNonSymbol(t *testing.T) {
 	checkSymbol(t, addNode.Right, "y")
 }
 
+func TestParseAssignNode(t *testing.T) {
+	tree := parseStatementHelper(t, "x = x + 1")
+
+	assignNode, ok := tree.(*AssignNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *AssignNode, got %T", tree)
+	}
+
+	checkSymbol(t, assignNode.Destination, "x")
+	addNode := checkInfix(t, assignNode.Value, "+")
+	checkSymbol(t, addNode.Left, "x")
+	checkInteger(t, addNode.Right, 1)
+}
+
 func TestParseForLoop(t *testing.T) {
 	tree := parseStatementHelper(t, "for c in string {\nprint(c)\n}")
 
@@ -206,6 +220,44 @@ func TestParseForLoop(t *testing.T) {
 
 	callNode := checkCall(t, eStmt.Expr, "print", 1)
 	checkSymbol(t, callNode.Arglist[0], "c")
+}
+
+func TestParseWhileLoop(t *testing.T) {
+	tree := parseStatementHelper(t, "while x > 0 {\nprint(x)\nx = x - 1\n}")
+
+	node, ok := tree.(*WhileNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *WhileNode, got %T", tree)
+	}
+
+	cmpNode := checkInfix(t, node.Cond, ">")
+	checkSymbol(t, cmpNode.Left, "x")
+	checkInteger(t, cmpNode.Right, 0)
+
+	if len(node.Block.Statements) != 2 {
+		t.Fatalf("Wrong number of statements in block: expected 2, got %d",
+			len(node.Block.Statements))
+	}
+
+	eStmt, ok := node.Block.Statements[0].(*ExpressionStatement)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ExpressionStatement, got %T",
+			node.Block.Statements[0])
+	}
+
+	callNode := checkCall(t, eStmt.Expr, "print", 1)
+	checkSymbol(t, callNode.Arglist[0], "x")
+
+	assignNode, ok := node.Block.Statements[1].(*AssignNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *AssignNode, got %T",
+			node.Block.Statements[1])
+	}
+
+	checkSymbol(t, assignNode.Destination, "x")
+	subNode := checkInfix(t, assignNode.Value, "-")
+	checkSymbol(t, subNode.Left, "x")
+	checkInteger(t, subNode.Right, 1)
 }
 
 // Helper functions
