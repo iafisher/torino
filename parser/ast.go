@@ -34,6 +34,18 @@ type AssignNode struct {
 
 func (n *AssignNode) statementNode() {}
 
+type IfNode struct {
+	Clauses []*IfClause
+	Else    *BlockNode
+}
+
+type IfClause struct {
+	Cond Expression
+	Body *BlockNode
+}
+
+func (n *IfNode) statementNode() {}
+
 type InfixNode struct {
 	Op    string
 	Left  Expression

@@ -51,6 +51,7 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) Parse() *BlockNode {
+	p.skipNewlines()
 	return p.parseBlock()
 }
 
@@ -61,9 +62,7 @@ func (p *Parser) parseBlock() *BlockNode {
 		statements = append(statements, stmt)
 
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
-			for p.checkCurToken(lexer.TOKEN_NEWLINE) {
-				p.nextToken()
-			}
+			p.skipNewlines()
 		} else if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
 			break
 		} else {
@@ -84,6 +83,8 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseForStatement()
 	} else if p.checkCurToken(lexer.TOKEN_WHILE) {
 		return p.parseWhileStatement()
+	} else if p.checkCurToken(lexer.TOKEN_IF) {
+		return p.parseIfStatement()
 	} else {
 		expr := p.parseExpression(PREC_LOWEST)
 		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
@@ -138,6 +139,33 @@ func (p *Parser) parseWhileStatement() Statement {
 	cond := p.parseExpression(PREC_LOWEST)
 	body := p.parseBracedBlock()
 	return &WhileNode{cond, body}
+}
+
+func (p *Parser) parseIfStatement() Statement {
+	p.nextToken()
+	clauses := []*IfClause{}
+
+	// Parse the if block.
+	cond := p.parseExpression(PREC_LOWEST)
+	body := p.parseBracedBlock()
+	clauses = append(clauses, &IfClause{cond, body})
+
+	// Parse zero or more elif blocks.
+	for p.checkCurToken(lexer.TOKEN_ELIF) {
+		p.nextToken()
+		elifCond := p.parseExpression(PREC_LOWEST)
+		elifBody := p.parseBracedBlock()
+		clauses = append(clauses, &IfClause{elifCond, elifBody})
+	}
+
+	// Parse an optional else block.
+	var elseBody *BlockNode = nil
+	if p.checkCurToken(lexer.TOKEN_ELSE) {
+		p.nextToken()
+		elseBody = p.parseBracedBlock()
+	}
+
+	return &IfNode{clauses, elseBody}
 }
 
 func (p *Parser) parseExpression(precedence int) Expression {
@@ -231,8 +259,11 @@ func (p *Parser) parseBracedBlock() *BlockNode {
 	}
 	p.nextToken()
 
-	for p.checkCurToken(lexer.TOKEN_NEWLINE) {
+	p.skipNewlines()
+
+	if p.checkCurToken(lexer.TOKEN_RBRACE) {
 		p.nextToken()
+		return &BlockNode{[]Statement{}}
 	}
 
 	block := p.parseBlock()
@@ -252,6 +283,12 @@ func (p *Parser) checkCurToken(expectedType string) bool {
 func (p *Parser) nextToken() *lexer.Token {
 	p.curToken = p.lexer.NextToken()
 	return p.curToken
+}
+
+func (p *Parser) skipNewlines() {
+	for p.checkCurToken(lexer.TOKEN_NEWLINE) {
+		p.nextToken()
+	}
 }
 
 func getPrecedence(tokType string) int {

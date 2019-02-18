@@ -260,6 +260,29 @@ func TestParseWhileLoop(t *testing.T) {
 	checkInteger(t, subNode.Right, 1)
 }
 
+func TestParseIf(t *testing.T) {
+	input := `
+if x > 0 {
+} elif x == 0 {
+} else {
+}
+`
+	tree := parseStatementHelper(t, input)
+	node, ok := tree.(*IfNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IfNode, got %T", tree)
+	}
+
+	if len(node.Clauses) != 2 {
+		t.Fatalf("Wrong number of if-elif clauses: expected 2, got %d",
+			len(node.Clauses))
+	}
+
+	cmpNode := checkInfix(t, node.Clauses[0].Cond, ">")
+	checkSymbol(t, cmpNode.Left, "x")
+	checkInteger(t, cmpNode.Right, 0)
+}
+
 // Helper functions
 
 func parseHelper(input string) *BlockNode {

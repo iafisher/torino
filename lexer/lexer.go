@@ -18,6 +18,8 @@ func New(program string) *Lexer {
 
 var keywords = map[string]string{
 	"and":    TOKEN_AND,
+	"elif":   TOKEN_ELIF,
+	"else":   TOKEN_ELSE,
 	"false":  TOKEN_FALSE,
 	"fn":     TOKEN_FN,
 	"for":    TOKEN_FOR,
