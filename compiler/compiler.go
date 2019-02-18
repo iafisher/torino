@@ -59,6 +59,16 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 			return append(insts, NewInst("MUL"))
 		} else if v.Op == "/" {
 			return append(insts, NewInst("DIV"))
+		} else if v.Op == "==" {
+			return append(insts, NewInst("EQ"))
+		} else if v.Op == ">" {
+			return append(insts, NewInst("GT"))
+		} else if v.Op == "<" {
+			return append(insts, NewInst("LT"))
+		} else if v.Op == ">=" {
+			return append(insts, NewInst("GE"))
+		} else if v.Op == "<=" {
+			return append(insts, NewInst("LE"))
 		} else {
 			panic("compileExpression - unknown operator")
 		}

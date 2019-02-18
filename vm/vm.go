@@ -54,6 +54,21 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "DIV" {
 		left, right := vm.popTwoInts()
 		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value / right.Value})
+	} else if inst.Name == "EQ" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value == right.Value})
+	} else if inst.Name == "GT" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value > right.Value})
+	} else if inst.Name == "LT" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value < right.Value})
+	} else if inst.Name == "GE" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value >= right.Value})
+	} else if inst.Name == "LE" {
+		left, right := vm.popTwoInts()
+		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value <= right.Value})
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}
