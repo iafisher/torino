@@ -62,6 +62,13 @@ type InfixNode struct {
 
 func (n *InfixNode) expressionNode() {}
 
+type PrefixNode struct {
+	Op  string
+	Arg Expression
+}
+
+func (n *PrefixNode) expressionNode() {}
+
 type CallNode struct {
 	Func    Expression
 	Arglist []Expression

@@ -215,7 +215,6 @@ func (p *Parser) parseFnStatement() Statement {
 
 func (p *Parser) parseExpression(precedence int) Expression {
 	left := p.parsePrefix()
-	p.nextToken()
 
 	for {
 		// Keep consuming infix operators until we hit either a non-infix token or an
@@ -241,27 +240,33 @@ func (p *Parser) parseExpression(precedence int) Expression {
 }
 
 func (p *Parser) parsePrefix() Expression {
-	if p.checkCurToken(lexer.TOKEN_INT) {
-		v, err := strconv.ParseInt(p.curToken.Value, 10, 64)
+	typ := p.curToken.Type
+	val := p.curToken.Value
+	p.nextToken()
+	if typ == lexer.TOKEN_INT {
+		v, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			panic("parsePrefix - could not parse integer token")
 		}
 		return &IntegerNode{v}
-	} else if p.checkCurToken(lexer.TOKEN_STRING) {
-		return &StringNode{p.curToken.Value}
-	} else if p.checkCurToken(lexer.TOKEN_SYMBOL) {
-		return &SymbolNode{p.curToken.Value}
-	} else if p.checkCurToken(lexer.TOKEN_TRUE) {
+	} else if typ == lexer.TOKEN_STRING {
+		return &StringNode{val}
+	} else if typ == lexer.TOKEN_SYMBOL {
+		return &SymbolNode{val}
+	} else if typ == lexer.TOKEN_TRUE {
 		return &BoolNode{true}
-	} else if p.checkCurToken(lexer.TOKEN_FALSE) {
+	} else if typ == lexer.TOKEN_FALSE {
 		return &BoolNode{false}
-	} else if p.checkCurToken(lexer.TOKEN_LPAREN) {
-		p.nextToken()
+	} else if typ == lexer.TOKEN_LPAREN {
 		expr := p.parseExpression(PREC_LOWEST)
 		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
 			panic("parsePrefix - expected )")
 		}
+		p.nextToken()
 		return expr
+	} else if typ == lexer.TOKEN_MINUS {
+		expr := p.parseExpression(PREC_PREFIX)
+		return &PrefixNode{val, expr}
 	} else {
 		panic(fmt.Sprintf("parsePrefix - unexpected token %s", p.curToken.Type))
 	}

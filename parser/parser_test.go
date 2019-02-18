@@ -151,6 +151,13 @@ func TestParseBooleanOp(t *testing.T) {
 	checkBool(t, andNode.Right, false)
 }
 
+func TestPrefixOp(t *testing.T) {
+	tree := parseExpressionHelper(t, "-5")
+
+	minusNode := checkPrefix(t, tree, "-")
+	checkInteger(t, minusNode.Arg, 5)
+}
+
 func TestParseCallExpression(t *testing.T) {
 	tree := parseExpressionHelper(t, "f(x)")
 
@@ -165,7 +172,7 @@ func TestParseCallExpressionWithNoArgs(t *testing.T) {
 }
 
 func TestParseComplexCallExpression(t *testing.T) {
-	tree := parseExpressionHelper(t, "7 * add(4 + 2, x - 1) / 10")
+	tree := parseExpressionHelper(t, "7 * -add(4 + 2, x - 1) / 10")
 
 	divNode := checkInfix(t, tree, "/")
 	checkInteger(t, divNode.Right, 10)
@@ -173,7 +180,8 @@ func TestParseComplexCallExpression(t *testing.T) {
 	mulNode := checkInfix(t, divNode.Left, "*")
 	checkInteger(t, mulNode.Left, 7)
 
-	callNode := checkCall(t, mulNode.Right, "add", 2)
+	minusNode := checkPrefix(t, mulNode.Right, "-")
+	callNode := checkCall(t, minusNode.Arg, "add", 2)
 
 	addNode := checkInfix(t, callNode.Arglist[0], "+")
 	checkInteger(t, addNode.Left, 4)
@@ -515,10 +523,23 @@ func checkInfix(t *testing.T, n Node, op string) *InfixNode {
 	}
 
 	if infixNode.Op != op {
-		t.Fatalf("Wrong operator: expected %s, got %s", op, infixNode.Op)
+		t.Fatalf("Wrong infix operator: expected %s, got %s", op, infixNode.Op)
 	}
 
 	return infixNode
+}
+
+func checkPrefix(t *testing.T, n Node, op string) *PrefixNode {
+	prefixNode, ok := n.(*PrefixNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *PrefixNode, got %T", n)
+	}
+
+	if prefixNode.Op != op {
+		t.Fatalf("Wrong prefix operator: expected %s, got %s", op, prefixNode.Op)
+	}
+
+	return prefixNode
 }
 
 func checkCall(t *testing.T, n Node, sym string, nargs int) *CallNode {
