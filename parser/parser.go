@@ -1,34 +1,39 @@
 /* Grammar of Torino.
 
-start := block
+	start := block
 
-block := (stmt NEWLINE)*
-stmt  := let | fn | for | while | if | break | continue | return | expr
+	block := (stmt NEWLINE)*
+	stmt  := let | fn | for | while | if | break | continue | return | expr
 
-let      := LET SYMBOL ASSIGN expr
-fn       := FN SYMBOL LPAREN params? RPAREN brace-block
-for      := FOR SYMBOL IN expr brace-block
-while    := WHILE expr brace-block
-if       := IF expr brace-block elif* else?
-elif     := ELIF expr brace-block
-else     := ELSE brace-block
-break    := BREAK
-continue := CONTINUE
-return   := RETURN expr?
+	let      := LET SYMBOL ASSIGN expr
+	fn       := FN SYMBOL LPAREN params? RPAREN brace-block
+	for      := FOR SYMBOL IN expr brace-block
+	while    := WHILE expr brace-block
+	if       := IF expr brace-block elif* else?
+	elif     := ELIF expr brace-block
+	else     := ELSE brace-block
+	break    := BREAK
+	continue := CONTINUE
+	return   := RETURN expr?
 
-brace-block := LBRACE NEWLINE block RBRACE
+	brace-block := LBRACE NEWLINE block RBRACE
 
-expr  := infix | call | pexpr | list | map | INT | STRING | SYMBOL | TRUE | FALSE
-pexpr := LPAREN expr RPAREN
-infix := expr OP expr
-call  := SYMBOL LPAREN args? RPAREN
-list  := LBRACKET args? RBRACKET
-map   := LBRACKET mapargs? RBRACKET
+	expr  := infix | call | pexpr | list | map | INT | STRING | SYMBOL | TRUE | FALSE
+	pexpr := LPAREN expr RPAREN
+	infix := expr OP expr
+	call  := SYMBOL LPAREN args? RPAREN
+	list  := LBRACKET args? RBRACKET
+	map   := LBRACKET mapargs? RBRACKET
 
-params  := (SYMBOL COMMA)* SYMBOL
-args    := (expr COMMA)* expr
-mapargs := (maparg COMMA)* maparg
-maparg  := expr COLON expr
+	params  := (SYMBOL COMMA)* SYMBOL
+	args    := (expr COMMA)* expr
+	mapargs := (maparg COMMA)* maparg
+	maparg  := expr COLON expr
+
+Infix operators have the usual precedence.
+
+Author:  Ian Fisher (iafisher@protonmail.com)
+Version: February 2019
 */
 package parser
 
