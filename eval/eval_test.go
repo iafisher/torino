@@ -6,6 +6,18 @@ import (
 	"testing"
 )
 
+func TestEvalIfStatement(t *testing.T) {
+	input := `
+let x = 42
+if x > 100 {
+	x = 666
+}
+x
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 func TestEvalIfElseStatement(t *testing.T) {
 	input := `
 let x = 0
@@ -60,7 +72,7 @@ func evalHelper(text string) data.TorinoValue {
 func checkInteger(t *testing.T, val data.TorinoValue, expected int64) {
 	intVal, ok := val.(*data.TorinoInt)
 	if !ok {
-		t.Fatalf("Wrong Torino type: expected *TorinoInt, got %T", intVal)
+		t.Fatalf("Wrong Torino type: expected *TorinoInt, got %T", val)
 	}
 
 	if intVal.Value != expected {

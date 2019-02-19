@@ -77,19 +77,28 @@ func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
 
 func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 	if len(ifNode.Clauses) == 1 {
+		ifCode := cmp.Compile(ifNode.Clauses[0].Body)
+
+		var elseLabel int64
 		if ifNode.Else != nil {
-			ifCode := cmp.Compile(ifNode.Clauses[0].Body)
-			elseCode := cmp.Compile(ifNode.Else)
-
-			elseLabel := int64(len(ifCode) + 2)
-			endLabel := int64(len(elseCode) + 1)
-
-			insts := cmp.compileExpression(ifNode.Clauses[0].Cond)
-			insts = append(insts, NewInst("REL_JUMP_IF_FALSE", &data.TorinoInt{elseLabel}))
-			insts = append(insts, ifCode...)
-			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endLabel}))
-			return append(insts, elseCode...)
+			// When there's an else statement, there is one extra REL_JUMP instruction.
+			elseLabel = int64(len(ifCode) + 2)
+		} else {
+			elseLabel = int64(len(ifCode) + 1)
 		}
+
+		insts := cmp.compileExpression(ifNode.Clauses[0].Cond)
+		insts = append(insts, NewInst("REL_JUMP_IF_FALSE", &data.TorinoInt{elseLabel}))
+		insts = append(insts, ifCode...)
+
+		if ifNode.Else != nil {
+			elseCode := cmp.Compile(ifNode.Else)
+			endLabel := int64(len(elseCode) + 1)
+			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endLabel}))
+			insts = append(insts, elseCode...)
+		}
+
+		return insts
 	} else {
 		compiledBodies := [][]*Instruction{}
 		compiledConds := [][]*Instruction{}
