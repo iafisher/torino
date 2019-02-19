@@ -3,10 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/iafisher/torino/compiler"
 	"github.com/iafisher/torino/data"
-	"github.com/iafisher/torino/lexer"
-	"github.com/iafisher/torino/parser"
+	"github.com/iafisher/torino/eval"
 	"github.com/iafisher/torino/vm"
 	"io/ioutil"
 	"os"
@@ -27,7 +25,6 @@ func repl() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	env := vm.NewEnv()
-	vm := vm.New()
 	for {
 		fmt.Print(">>> ")
 		scanned := scanner.Scan()
@@ -36,11 +33,11 @@ func repl() {
 		}
 
 		line := scanner.Text()
-		oneline(line, vm, env)
+		oneline(line, env)
 	}
 }
 
-func oneline(text string, vm *vm.VirtualMachine, env *vm.Environment) {
+func oneline(text string, env *vm.Environment) {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -48,13 +45,7 @@ func oneline(text string, vm *vm.VirtualMachine, env *vm.Environment) {
 		}
 	}()
 
-	p := parser.New(lexer.New(text))
-	ast := p.Parse()
-
-	cmp := compiler.New()
-	program := cmp.Compile(ast)
-
-	val := vm.Execute(program, env)
+	val := eval.Eval(text, env)
 	_, isNone := val.(*data.TorinoNone)
 	if !isNone {
 		fmt.Println(val.Repr())
@@ -70,13 +61,6 @@ func runFile(path string) {
 
 	text := string(contents)
 
-	p := parser.New(lexer.New(text))
-	ast := p.Parse()
-
-	cmp := compiler.New()
-	program := cmp.Compile(ast)
-
 	env := vm.NewEnv()
-	vm := vm.New()
-	vm.Execute(program, env)
+	eval.Eval(text, env)
 }

@@ -35,6 +35,8 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 		return cmp.compileLet(v)
 	case *parser.AssignNode:
 		return cmp.compileAssign(v)
+	case *parser.IfNode:
+		return cmp.compileIf(v)
 	default:
 		panic("compileStatement - unknown statement type")
 	}
@@ -50,6 +52,10 @@ func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
 	return append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
 }
 
+func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
+	panic("not implemented!")
+}
+
 func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 	insts := []*Instruction{}
 	switch v := expr.(type) {
@@ -62,49 +68,63 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 	case *parser.StringNode:
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value}))
 	case *parser.InfixNode:
-		insts = append(insts, cmp.compileExpression(v.Right)...)
-		insts = append(insts, cmp.compileExpression(v.Left)...)
-		if v.Op == "+" {
-			return append(insts, NewInst("BINARY_ADD"))
-		} else if v.Op == "-" {
-			return append(insts, NewInst("BINARY_SUB"))
-		} else if v.Op == "*" {
-			return append(insts, NewInst("BINARY_MUL"))
-		} else if v.Op == "/" {
-			return append(insts, NewInst("BINARY_DIV"))
-		} else if v.Op == "==" {
-			return append(insts, NewInst("BINARY_EQ"))
-		} else if v.Op == ">" {
-			return append(insts, NewInst("BINARY_GT"))
-		} else if v.Op == "<" {
-			return append(insts, NewInst("BINARY_LT"))
-		} else if v.Op == ">=" {
-			return append(insts, NewInst("BINARY_GE"))
-		} else if v.Op == "<=" {
-			return append(insts, NewInst("BINARY_LE"))
-		} else if v.Op == "and" {
-			return append(insts, NewInst("BINARY_AND"))
-		} else if v.Op == "or" {
-			return append(insts, NewInst("BINARY_OR"))
-		} else {
-			panic(fmt.Sprintf("compileExpression - unknown infix operator %s", v.Op))
-		}
+		return cmp.compileInfix(v)
 	case *parser.PrefixNode:
-		insts = append(insts, cmp.compileExpression(v.Arg)...)
-		if v.Op == "-" {
-			return append(insts, NewInst("UNARY_MINUS"))
-		} else {
-			panic(fmt.Sprintf("compileExpression - unknown prefix operator %s", v.Op))
-		}
+		return cmp.compilePrefix(v)
 	case *parser.CallNode:
-		for _, e := range v.Arglist {
-			insts = append(insts, cmp.compileExpression(e)...)
-		}
-		insts = append(insts, cmp.compileExpression(v.Func)...)
-		nargs := int64(len(v.Arglist))
-		return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
+		return cmp.compileCall(v)
 	default:
 		panic(fmt.Sprintf("compileExpression - unknown expression type %+v (%T)",
 			expr, expr))
 	}
+}
+
+func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
+	insts := cmp.compileExpression(infixNode.Right)
+	insts = append(insts, cmp.compileExpression(infixNode.Left)...)
+	if infixNode.Op == "+" {
+		return append(insts, NewInst("BINARY_ADD"))
+	} else if infixNode.Op == "-" {
+		return append(insts, NewInst("BINARY_SUB"))
+	} else if infixNode.Op == "*" {
+		return append(insts, NewInst("BINARY_MUL"))
+	} else if infixNode.Op == "/" {
+		return append(insts, NewInst("BINARY_DIV"))
+	} else if infixNode.Op == "==" {
+		return append(insts, NewInst("BINARY_EQ"))
+	} else if infixNode.Op == ">" {
+		return append(insts, NewInst("BINARY_GT"))
+	} else if infixNode.Op == "<" {
+		return append(insts, NewInst("BINARY_LT"))
+	} else if infixNode.Op == ">=" {
+		return append(insts, NewInst("BINARY_GE"))
+	} else if infixNode.Op == "<=" {
+		return append(insts, NewInst("BINARY_LE"))
+	} else if infixNode.Op == "and" {
+		return append(insts, NewInst("BINARY_AND"))
+	} else if infixNode.Op == "or" {
+		return append(insts, NewInst("BINARY_OR"))
+	} else {
+		panic(fmt.Sprintf("compileExpression - unknown infix operator %s", infixNode.Op))
+	}
+}
+
+func (cmp *Compiler) compilePrefix(prefixNode *parser.PrefixNode) []*Instruction {
+	insts := cmp.compileExpression(prefixNode.Arg)
+	if prefixNode.Op == "-" {
+		return append(insts, NewInst("UNARY_MINUS"))
+	} else {
+		panic(fmt.Sprintf("compileExpression - unknown prefix operator %s",
+			prefixNode.Op))
+	}
+}
+
+func (cmp *Compiler) compileCall(callNode *parser.CallNode) []*Instruction {
+	insts := []*Instruction{}
+	for _, e := range callNode.Arglist {
+		insts = append(insts, cmp.compileExpression(e)...)
+	}
+	insts = append(insts, cmp.compileExpression(callNode.Func)...)
+	nargs := int64(len(callNode.Arglist))
+	return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
 }
