@@ -9,7 +9,7 @@ type TorinoValue interface {
 }
 
 type TorinoInt struct {
-	Value int64
+	Value int
 }
 
 func (t *TorinoInt) String() string {

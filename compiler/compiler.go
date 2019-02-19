@@ -100,12 +100,12 @@ func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 		endJump -= (len(code) + len(compiledConds[i]) + 1)
 
 		insts = append(insts, compiledConds[i]...)
-		jump := &data.TorinoInt{int64(len(code) + 2)}
+		jump := &data.TorinoInt{len(code) + 2}
 
 		insts = append(insts, NewInst("REL_JUMP_IF_FALSE", jump))
 
 		insts = append(insts, code...)
-		insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{int64(endJump + 1)}))
+		insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endJump + 1}))
 	}
 
 	if elseCode != nil {
@@ -161,6 +161,6 @@ func (cmp *Compiler) compileCall(callNode *parser.CallNode) []*Instruction {
 		insts = append(insts, cmp.compileExpression(e)...)
 	}
 	insts = append(insts, cmp.compileExpression(callNode.Func)...)
-	nargs := int64(len(callNode.Arglist))
+	nargs := len(callNode.Arglist)
 	return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
 }

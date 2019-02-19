@@ -94,7 +94,7 @@ func evalHelper(text string) data.TorinoValue {
 	return Eval(text, env)
 }
 
-func checkInteger(t *testing.T, val data.TorinoValue, expected int64) {
+func checkInteger(t *testing.T, val data.TorinoValue, expected int) {
 	intVal, ok := val.(*data.TorinoInt)
 	if !ok {
 		t.Fatalf("Wrong Torino type: expected *TorinoInt, got %T", val)

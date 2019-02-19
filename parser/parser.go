@@ -248,7 +248,7 @@ func (p *Parser) parsePrefix() Expression {
 		if err != nil {
 			panic("parsePrefix - could not parse integer token")
 		}
-		return &IntegerNode{v}
+		return &IntegerNode{int(v)}
 	} else if typ == lexer.TOKEN_STRING {
 		return &StringNode{val}
 	} else if typ == lexer.TOKEN_SYMBOL {

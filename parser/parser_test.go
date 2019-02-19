@@ -483,7 +483,7 @@ func extractStatement(t *testing.T, bn *BlockNode) Statement {
 	return bn.Statements[0]
 }
 
-func checkInteger(t *testing.T, n Node, v int64) {
+func checkInteger(t *testing.T, n Node, v int) {
 	intNode, ok := n.(*IntegerNode)
 	if !ok {
 		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", n)

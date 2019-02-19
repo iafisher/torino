@@ -102,7 +102,7 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "CALL_FUNCTION" {
 		f := vm.popStack().(*data.TorinoBuiltin)
 		args := []data.TorinoValue{}
-		for i := 0; int64(i) < inst.Args[0].(*data.TorinoInt).Value; i++ {
+		for i := 0; i < inst.Args[0].(*data.TorinoInt).Value; i++ {
 			args = append(args, vm.popStack())
 		}
 		vm.pushStack(f.F(args...))

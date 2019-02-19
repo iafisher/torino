@@ -106,7 +106,7 @@ type ReturnNode struct {
 func (n *ReturnNode) statementNode() {}
 
 type IntegerNode struct {
-	Value int64
+	Value int
 }
 
 func (n *IntegerNode) expressionNode() {}
