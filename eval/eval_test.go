@@ -6,6 +6,31 @@ import (
 	"testing"
 )
 
+func TestEvalLetAndAssign(t *testing.T) {
+	input := `
+let abc = 666
+abc = 42
+abc
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
+func TestEvalArithmetic(t *testing.T) {
+	val := evalHelper("(42 * (1 + 2 - 1)) / 2")
+	checkInteger(t, val, 42)
+}
+
+func TestLetWithComplexArithmetic(t *testing.T) {
+	input := `
+let eighty = 40 * 2
+let my_variable = (eighty + 6) / (1 + 1) - 1
+my_variable
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 func TestEvalIfStatement(t *testing.T) {
 	input := `
 let x = 42
