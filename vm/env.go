@@ -9,6 +9,7 @@ type Environment struct {
 func NewEnv() *Environment {
 	env := &Environment{map[string]data.TorinoValue{}}
 	env.Put("print", &data.TorinoBuiltin{builtinPrint})
+	env.Put("println", &data.TorinoBuiltin{builtinPrintln})
 	return env
 }
 

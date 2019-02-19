@@ -59,6 +59,8 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		return append(insts, NewInst("PUSH_NAME", &data.TorinoString{v.Value}))
 	case *parser.BoolNode:
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoBool{v.Value}))
+	case *parser.StringNode:
+		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value}))
 	case *parser.InfixNode:
 		insts = append(insts, cmp.compileExpression(v.Right)...)
 		insts = append(insts, cmp.compileExpression(v.Left)...)

@@ -57,7 +57,7 @@ func oneline(text string, vm *vm.VirtualMachine, env *vm.Environment) {
 	val := vm.Execute(program, env)
 	_, isNone := val.(*data.TorinoNone)
 	if !isNone {
-		fmt.Println(val.String())
+		fmt.Println(val.Repr())
 	}
 }
 

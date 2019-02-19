@@ -4,6 +4,7 @@ import "fmt"
 
 type TorinoValue interface {
 	String() string
+	Repr() string
 	torinoValue()
 }
 
@@ -15,6 +16,10 @@ func (t *TorinoInt) String() string {
 	return fmt.Sprintf("%d", t.Value)
 }
 
+func (t *TorinoInt) Repr() string {
+	return t.String()
+}
+
 func (t *TorinoInt) torinoValue() {}
 
 type TorinoString struct {
@@ -22,7 +27,11 @@ type TorinoString struct {
 }
 
 func (t *TorinoString) String() string {
-	// TODO: This won't play nicely with backslash escapes.
+	return fmt.Sprintf("%s", t.Value)
+}
+
+func (t *TorinoString) Repr() string {
+	// TODO: This won't work well with backslash escapes.
 	return fmt.Sprintf("\"%s\"", t.Value)
 }
 
@@ -40,6 +49,10 @@ func (t *TorinoBool) String() string {
 	}
 }
 
+func (t *TorinoBool) Repr() string {
+	return t.String()
+}
+
 func (t *TorinoBool) torinoValue() {}
 
 type TorinoNone struct {
@@ -51,6 +64,10 @@ func (t *TorinoNone) String() string {
 	return "none"
 }
 
+func (t *TorinoNone) Repr() string {
+	return t.String()
+}
+
 type TorinoBuiltin struct {
 	F func(...TorinoValue) TorinoValue
 }
@@ -59,4 +76,8 @@ func (t *TorinoBuiltin) torinoValue() {}
 
 func (t *TorinoBuiltin) String() string {
 	return "<built-in function>"
+}
+
+func (t *TorinoBuiltin) Repr() string {
+	return t.String()
 }
