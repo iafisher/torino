@@ -6,13 +6,27 @@ import (
 	"testing"
 )
 
-func TestEvalIfStatement(t *testing.T) {
+func TestEvalIfElseStatement(t *testing.T) {
 	input := `
 let x = 0
 if true {
 	x = 42
 } else {
 	x = 666
+}
+x
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
+func TestEvalIfElifStatement(t *testing.T) {
+	input := `
+let x = 0
+if false {
+	x = 666
+} elif x == 0 {
+	x = 42
 }
 x
 `

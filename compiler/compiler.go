@@ -90,6 +90,36 @@ func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endLabel}))
 			return append(insts, elseCode...)
 		}
+	} else {
+		if ifNode.Else == nil {
+			compiledBodies := [][]*Instruction{}
+			compiledConds := [][]*Instruction{}
+			endJump := 0
+			for _, clause := range ifNode.Clauses {
+				cond := cmp.compileExpression(clause.Cond)
+				body := cmp.Compile(clause.Body)
+
+				compiledConds = append(compiledConds, cond)
+				compiledBodies = append(compiledBodies, body)
+
+				endJump += len(cond) + len(body) + 1
+			}
+
+			insts := []*Instruction{}
+			for i, code := range compiledBodies {
+				endJump -= (len(code) + len(compiledConds[i]) + 1)
+
+				insts = append(insts, compiledConds[i]...)
+				jump := len(code) + 1
+				insts = append(insts,
+					NewInst("REL_JUMP_IF_FALSE", &data.TorinoInt{int64(jump + 1)}))
+				insts = append(insts, code...)
+				insts = append(insts,
+					NewInst("REL_JUMP", &data.TorinoInt{int64(endJump + 1)}))
+			}
+
+			return insts
+		}
 	}
 	panic("not implemented!")
 }
