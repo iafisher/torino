@@ -76,69 +76,43 @@ func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
 }
 
 func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
-	if len(ifNode.Clauses) == 1 {
-		ifCode := cmp.Compile(ifNode.Clauses[0].Body)
+	compiledBodies := make([][]*Instruction, 0, len(ifNode.Clauses))
+	compiledConds := make([][]*Instruction, 0, len(ifNode.Clauses))
+	endJump := 0
+	for _, clause := range ifNode.Clauses {
+		cond := cmp.compileExpression(clause.Cond)
+		body := cmp.Compile(clause.Body)
 
-		var elseLabel int64
-		if ifNode.Else != nil {
-			// When there's an else statement, there is one extra REL_JUMP instruction.
-			elseLabel = int64(len(ifCode) + 2)
-		} else {
-			elseLabel = int64(len(ifCode) + 1)
-		}
+		compiledConds = append(compiledConds, cond)
+		compiledBodies = append(compiledBodies, body)
 
-		insts := cmp.compileExpression(ifNode.Clauses[0].Cond)
-		insts = append(insts, NewInst("REL_JUMP_IF_FALSE", &data.TorinoInt{elseLabel}))
-		insts = append(insts, ifCode...)
-
-		if ifNode.Else != nil {
-			elseCode := cmp.Compile(ifNode.Else)
-			endLabel := int64(len(elseCode) + 1)
-			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endLabel}))
-			insts = append(insts, elseCode...)
-		}
-
-		return insts
-	} else {
-		compiledBodies := [][]*Instruction{}
-		compiledConds := [][]*Instruction{}
-		endJump := 0
-		for _, clause := range ifNode.Clauses {
-			cond := cmp.compileExpression(clause.Cond)
-			body := cmp.Compile(clause.Body)
-
-			compiledConds = append(compiledConds, cond)
-			compiledBodies = append(compiledBodies, body)
-
-			endJump += len(cond) + len(body) + 1
-		}
-
-		var elseCode []*Instruction
-		if ifNode.Else != nil {
-			elseCode = cmp.Compile(ifNode.Else)
-			endJump += len(elseCode)
-		}
-
-		insts := []*Instruction{}
-		for i, code := range compiledBodies {
-			endJump -= (len(code) + len(compiledConds[i]) + 1)
-
-			insts = append(insts, compiledConds[i]...)
-			jump := &data.TorinoInt{int64(len(code) + 2)}
-
-			insts = append(insts, NewInst("REL_JUMP_IF_FALSE", jump))
-
-			insts = append(insts, code...)
-			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{int64(endJump + 1)}))
-		}
-
-		if elseCode != nil {
-			insts = append(insts, elseCode...)
-		}
-
-		return insts
+		endJump += len(cond) + len(body) + 1
 	}
-	panic("not implemented!")
+
+	var elseCode []*Instruction
+	if ifNode.Else != nil {
+		elseCode = cmp.Compile(ifNode.Else)
+		endJump += len(elseCode)
+	}
+
+	insts := []*Instruction{}
+	for i, code := range compiledBodies {
+		endJump -= (len(code) + len(compiledConds[i]) + 1)
+
+		insts = append(insts, compiledConds[i]...)
+		jump := &data.TorinoInt{int64(len(code) + 2)}
+
+		insts = append(insts, NewInst("REL_JUMP_IF_FALSE", jump))
+
+		insts = append(insts, code...)
+		insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{int64(endJump + 1)}))
+	}
+
+	if elseCode != nil {
+		insts = append(insts, elseCode...)
+	}
+
+	return insts
 }
 
 func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
