@@ -8,11 +8,18 @@ import (
 	"github.com/iafisher/torino/lexer"
 	"github.com/iafisher/torino/parser"
 	"github.com/iafisher/torino/vm"
+	"io/ioutil"
 	"os"
 )
 
 func main() {
-	repl()
+	if len(os.Args) == 1 {
+		repl()
+	} else if len(os.Args) == 2 {
+		runFile(os.Args[1])
+	} else {
+		fmt.Println("Error: too many command-line arguments supplied.")
+	}
 }
 
 func repl() {
@@ -52,4 +59,24 @@ func oneline(text string, vm *vm.VirtualMachine, env *vm.Environment) {
 	if !isNone {
 		fmt.Println(val.String())
 	}
+}
+
+func runFile(path string) {
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	text := string(contents)
+
+	p := parser.New(lexer.New(text))
+	ast := p.Parse()
+
+	cmp := compiler.New()
+	program := cmp.Compile(ast)
+
+	env := vm.NewEnv()
+	vm := vm.New()
+	vm.Execute(program, env)
 }
