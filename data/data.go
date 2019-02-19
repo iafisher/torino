@@ -50,3 +50,13 @@ func (t *TorinoNone) torinoValue() {}
 func (t *TorinoNone) String() string {
 	return "none"
 }
+
+type TorinoBuiltin struct {
+	F func(...TorinoValue) TorinoValue
+}
+
+func (t *TorinoBuiltin) torinoValue() {}
+
+func (t *TorinoBuiltin) String() string {
+	return "<built-in function>"
+}

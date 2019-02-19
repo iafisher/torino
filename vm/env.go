@@ -7,7 +7,9 @@ type Environment struct {
 }
 
 func NewEnv() *Environment {
-	return &Environment{map[string]data.TorinoValue{}}
+	env := &Environment{map[string]data.TorinoValue{}}
+	env.Put("print", &data.TorinoBuiltin{builtinPrint})
+	return env
 }
 
 func (env *Environment) Get(k string) (data.TorinoValue, bool) {

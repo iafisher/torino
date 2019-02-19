@@ -93,6 +93,13 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "UNARY_MINUS" {
 		arg := vm.popStack().(*data.TorinoInt)
 		vm.Stack = append(vm.Stack, &data.TorinoInt{-arg.Value})
+	} else if inst.Name == "CALL_FUNCTION" {
+		f := vm.popStack().(*data.TorinoBuiltin)
+		args := []data.TorinoValue{}
+		for i := 0; int64(i) < inst.Args[0].(*data.TorinoInt).Value; i++ {
+			args = append(args, vm.popStack())
+		}
+		vm.Stack = append(vm.Stack, f.F(args...))
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}

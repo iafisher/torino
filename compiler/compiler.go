@@ -94,6 +94,13 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		} else {
 			panic(fmt.Sprintf("compileExpression - unknown prefix operator %s", v.Op))
 		}
+	case *parser.CallNode:
+		for _, e := range v.Arglist {
+			insts = append(insts, cmp.compileExpression(e)...)
+		}
+		insts = append(insts, cmp.compileExpression(v.Func)...)
+		nargs := int64(len(v.Arglist))
+		return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
 	default:
 		panic(fmt.Sprintf("compileExpression - unknown expression type %+v (%T)",
 			expr, expr))

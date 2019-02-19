@@ -12,6 +12,10 @@ import (
 )
 
 func main() {
+	repl()
+}
+
+func repl() {
 	fmt.Println("The Torino programming language.\n")
 
 	scanner := bufio.NewScanner(os.Stdin)
