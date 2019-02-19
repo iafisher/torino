@@ -12,7 +12,8 @@ import (
 )
 
 type VirtualMachine struct {
-	Stack []data.TorinoValue
+	stack []data.TorinoValue
+	pc    int
 }
 
 func New() *VirtualMachine {
@@ -22,12 +23,12 @@ func New() *VirtualMachine {
 func (vm *VirtualMachine) Execute(
 	program []*compiler.Instruction, env *Environment,
 ) data.TorinoValue {
-	for _, inst := range program {
-		vm.executeOne(inst, env)
+	for vm.pc < len(program) {
+		vm.executeOne(program[vm.pc], env)
 	}
 
-	if len(vm.Stack) > 0 {
-		return vm.Stack[len(vm.Stack)-1]
+	if len(vm.stack) > 0 {
+		return vm.stack[len(vm.stack)-1]
 	} else {
 		return &data.TorinoNone{}
 	}
@@ -35,7 +36,7 @@ func (vm *VirtualMachine) Execute(
 
 func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) {
 	if inst.Name == "PUSH_CONST" {
-		vm.Stack = append(vm.Stack, inst.Args[0])
+		vm.pushStack(inst.Args[0])
 	} else if inst.Name == "STORE_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		_, ok := env.Get(key)
@@ -56,58 +57,64 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		if !ok {
 			panic(fmt.Sprintf("undefined symbol %s", key))
 		}
-		vm.Stack = append(vm.Stack, val)
+		vm.pushStack(val)
 	} else if inst.Name == "BINARY_ADD" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value + right.Value})
+		vm.pushStack(&data.TorinoInt{left.Value + right.Value})
 	} else if inst.Name == "BINARY_SUB" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value - right.Value})
+		vm.pushStack(&data.TorinoInt{left.Value - right.Value})
 	} else if inst.Name == "BINARY_MUL" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value * right.Value})
+		vm.pushStack(&data.TorinoInt{left.Value * right.Value})
 	} else if inst.Name == "BINARY_DIV" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoInt{left.Value / right.Value})
+		vm.pushStack(&data.TorinoInt{left.Value / right.Value})
 	} else if inst.Name == "BINARY_EQ" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value == right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value == right.Value})
 	} else if inst.Name == "BINARY_GT" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value > right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value > right.Value})
 	} else if inst.Name == "BINARY_LT" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value < right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value < right.Value})
 	} else if inst.Name == "BINARY_GE" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value >= right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value >= right.Value})
 	} else if inst.Name == "BINARY_LE" {
 		left, right := vm.popTwoInts()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value <= right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value <= right.Value})
 	} else if inst.Name == "BINARY_AND" {
 		left, right := vm.popTwoBools()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value && right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value && right.Value})
 	} else if inst.Name == "BINARY_OR" {
 		left, right := vm.popTwoBools()
-		vm.Stack = append(vm.Stack, &data.TorinoBool{left.Value || right.Value})
+		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
 	} else if inst.Name == "UNARY_MINUS" {
 		arg := vm.popStack().(*data.TorinoInt)
-		vm.Stack = append(vm.Stack, &data.TorinoInt{-arg.Value})
+		vm.pushStack(&data.TorinoInt{-arg.Value})
 	} else if inst.Name == "CALL_FUNCTION" {
 		f := vm.popStack().(*data.TorinoBuiltin)
 		args := []data.TorinoValue{}
 		for i := 0; int64(i) < inst.Args[0].(*data.TorinoInt).Value; i++ {
 			args = append(args, vm.popStack())
 		}
-		vm.Stack = append(vm.Stack, f.F(args...))
+		vm.pushStack(f.F(args...))
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}
+
+	vm.pc += 1
+}
+
+func (vm *VirtualMachine) pushStack(vals ...data.TorinoValue) {
+	vm.stack = append(vm.stack, vals...)
 }
 
 func (vm *VirtualMachine) popStack() data.TorinoValue {
-	ret := vm.Stack[len(vm.Stack)-1]
-	vm.Stack = vm.Stack[:len(vm.Stack)-1]
+	ret := vm.stack[len(vm.stack)-1]
+	vm.stack = vm.stack[:len(vm.stack)-1]
 	return ret
 }
 

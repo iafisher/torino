@@ -42,20 +42,6 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 	}
 }
 
-func (cmp *Compiler) compileLet(node *parser.LetNode) []*Instruction {
-	insts := cmp.compileExpression(node.Value)
-	return append(insts, NewInst("STORE_NAME", &data.TorinoString{node.Destination.Value}))
-}
-
-func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
-	insts := cmp.compileExpression(node.Value)
-	return append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
-}
-
-func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
-	panic("not implemented!")
-}
-
 func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 	insts := []*Instruction{}
 	switch v := expr.(type) {
@@ -77,6 +63,20 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		panic(fmt.Sprintf("compileExpression - unknown expression type %+v (%T)",
 			expr, expr))
 	}
+}
+
+func (cmp *Compiler) compileLet(node *parser.LetNode) []*Instruction {
+	insts := cmp.compileExpression(node.Value)
+	return append(insts, NewInst("STORE_NAME", &data.TorinoString{node.Destination.Value}))
+}
+
+func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
+	insts := cmp.compileExpression(node.Value)
+	return append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
+}
+
+func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
+	panic("not implemented!")
 }
 
 func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
