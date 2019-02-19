@@ -1,6 +1,9 @@
 package data
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type TorinoValue interface {
 	String() string
@@ -31,8 +34,7 @@ func (t *TorinoString) String() string {
 }
 
 func (t *TorinoString) Repr() string {
-	// TODO: This won't work well with backslash escapes.
-	return fmt.Sprintf("\"%s\"", t.Value)
+	return strconv.Quote(t.Value)
 }
 
 func (t *TorinoString) torinoValue() {}
