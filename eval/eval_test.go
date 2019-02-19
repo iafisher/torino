@@ -34,6 +34,22 @@ x
 	checkInteger(t, val, 42)
 }
 
+func TestEvalIfElifElseStatement(t *testing.T) {
+	input := `
+let x = 0
+if false {
+	x = 666
+} elif x == 1 {
+	x = 667
+} else {
+	x = 42
+}
+x
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 // Helper functions
 
 func evalHelper(text string) data.TorinoValue {

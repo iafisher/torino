@@ -20,9 +20,14 @@ func New() *VirtualMachine {
 	return &VirtualMachine{}
 }
 
-func (vm *VirtualMachine) Execute(
-	program []*compiler.Instruction, env *Environment,
-) data.TorinoValue {
+func (vm *VirtualMachine) Execute(program []*compiler.Instruction, env *Environment) data.TorinoValue {
+	/* Print the bytecode, for debugging.
+	for _, inst := range program {
+		fmt.Printf("%v\n", inst)
+	}
+	fmt.Println("DONE")
+	*/
+
 	for vm.pc < len(program) {
 		vm.executeOne(program[vm.pc], env)
 	}
