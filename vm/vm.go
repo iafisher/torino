@@ -101,11 +101,27 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			args = append(args, vm.popStack())
 		}
 		vm.pushStack(f.F(args...))
+	} else if inst.Name == "REL_JUMP_IF_FALSE" {
+		// Nothing to do here.
+	} else if inst.Name == "REL_JUMP" {
+		// Nothing to do here.
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
 	}
 
-	vm.pc += 1
+	// Update the program counter.
+	if inst.Name == "REL_JUMP_IF_FALSE" {
+		cond := vm.popStack().(*data.TorinoBool)
+		if !cond.Value {
+			vm.pc += int(inst.Args[0].(*data.TorinoInt).Value)
+		} else {
+			vm.pc += 1
+		}
+	} else if inst.Name == "REL_JUMP" {
+		vm.pc += int(inst.Args[0].(*data.TorinoInt).Value)
+	} else {
+		vm.pc += 1
+	}
 }
 
 func (vm *VirtualMachine) pushStack(vals ...data.TorinoValue) {

@@ -76,6 +76,21 @@ func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
 }
 
 func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
+	if len(ifNode.Clauses) == 1 {
+		if ifNode.Else != nil {
+			ifCode := cmp.Compile(ifNode.Clauses[0].Body)
+			elseCode := cmp.Compile(ifNode.Else)
+
+			elseLabel := int64(len(ifCode) + 2)
+			endLabel := int64(len(elseCode) + 1)
+
+			insts := cmp.compileExpression(ifNode.Clauses[0].Cond)
+			insts = append(insts, NewInst("REL_JUMP_IF_FALSE", &data.TorinoInt{elseLabel}))
+			insts = append(insts, ifCode...)
+			insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{endLabel}))
+			return append(insts, elseCode...)
+		}
+	}
 	panic("not implemented!")
 }
 
