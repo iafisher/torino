@@ -145,6 +145,14 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			vm.pushStack(vm.Execute(f.Body, fEnv))
 		}
 		// The following operations don't affect the stack.
+	} else if inst.Name == "MAKE_LIST" {
+		nelems := inst.Args[0].(*data.TorinoInt).Value
+
+		values := []data.TorinoValue{}
+		for i := 0; i < nelems; i++ {
+			values = append(values, vm.popStack())
+		}
+		vm.pushStack(&data.TorinoList{values})
 	} else if inst.Name == "RETURN_VALUE" {
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
 	} else if inst.Name == "REL_JUMP" {

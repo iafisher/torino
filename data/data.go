@@ -3,6 +3,7 @@ package data
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type TorinoValue interface {
@@ -81,5 +82,29 @@ func (t *TorinoBuiltin) String() string {
 }
 
 func (t *TorinoBuiltin) Repr() string {
+	return t.String()
+}
+
+type TorinoList struct {
+	Values []TorinoValue
+}
+
+func (t *TorinoList) Torino() {}
+
+func (t *TorinoList) String() string {
+	var str strings.Builder
+
+	str.WriteString("[")
+	for i, val := range t.Values {
+		str.WriteString(val.Repr())
+		if i != len(t.Values)-1 {
+			str.WriteString(", ")
+		}
+	}
+	str.WriteString("]")
+	return str.String()
+}
+
+func (t *TorinoList) Repr() string {
 	return t.String()
 }

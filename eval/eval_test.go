@@ -124,6 +124,15 @@ x
 	checkInteger(t, val, 42)
 }
 
+func TestEvalList(t *testing.T) {
+	val := evalHelper("[1, 2, 3]")
+
+	listVal := checkList(t, val, 3)
+	checkInteger(t, listVal.Values[0], 1)
+	checkInteger(t, listVal.Values[1], 2)
+	checkInteger(t, listVal.Values[2], 3)
+}
+
 // Helper functions
 
 func evalHelper(text string) data.TorinoValue {
@@ -140,4 +149,18 @@ func checkInteger(t *testing.T, val data.TorinoValue, expected int) {
 	if intVal.Value != expected {
 		t.Fatalf("Wrong integer value: expected %d, got %d", expected, intVal.Value)
 	}
+}
+
+func checkList(t *testing.T, val data.TorinoValue, nelems int) *data.TorinoList {
+	listVal, ok := val.(*data.TorinoList)
+	if !ok {
+		t.Fatalf("Wrong Torino type: expected *TorinoList, got %T", val)
+	}
+
+	if len(listVal.Values) != nelems {
+		t.Fatalf("Wrong number of list elements: expected %d, got %d",
+			nelems, len(listVal.Values))
+	}
+
+	return listVal
 }

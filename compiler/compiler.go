@@ -59,6 +59,8 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoBool{v.Value}))
 	case *parser.StringNode:
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value}))
+	case *parser.ListNode:
+		return cmp.compileList(v)
 	case *parser.InfixNode:
 		return cmp.compileInfix(v)
 	case *parser.PrefixNode:
@@ -147,6 +149,14 @@ func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) []*Instruction {
 	insts = append(insts, body...)
 	startJump := &data.TorinoInt{-(len(cond) + len(body) + 1)}
 	return append(insts, NewInst("REL_JUMP", startJump))
+}
+
+func (cmp *Compiler) compileList(listNode *parser.ListNode) []*Instruction {
+	insts := []*Instruction{}
+	for i := len(listNode.Values) - 1; i >= 0; i-- {
+		insts = append(insts, cmp.compileExpression(listNode.Values[i])...)
+	}
+	return append(insts, NewInst("MAKE_LIST", &data.TorinoInt{len(listNode.Values)}))
 }
 
 func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
