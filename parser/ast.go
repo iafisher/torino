@@ -1,3 +1,8 @@
+/* Definition of AST node types.
+
+Author:  Ian Fisher (iafisher@protonmail.com)
+Version: February 2019
+*/
 package parser
 
 type Node interface{}
@@ -128,3 +133,9 @@ type SymbolNode struct {
 }
 
 func (n *SymbolNode) expressionNode() {}
+
+type ListNode struct {
+	Values []Expression
+}
+
+func (n *ListNode) expressionNode() {}

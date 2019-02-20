@@ -14,14 +14,7 @@ func TestParseInteger(t *testing.T) {
 func TestParseString(t *testing.T) {
 	tree := parseExpressionHelper(t, "\"hello\\n\"")
 
-	node, ok := tree.(*StringNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *StringNode, got %T", tree)
-	}
-
-	if node.Value != "hello\n" {
-		t.Fatalf("Wrong string value: expected \"hello\\n\", got %q", node.Value)
-	}
+	checkString(t, tree, "hello\n")
 }
 
 func TestParseSymbol(t *testing.T) {
@@ -447,6 +440,30 @@ func TestParseBreakAndContinue(t *testing.T) {
 	}
 }
 
+func TestParseList(t *testing.T) {
+	tree := parseExpressionHelper(t, "[1, 2, 3]")
+
+	listNode := checkList(t, tree, 3)
+	checkInteger(t, listNode.Values[0], 1)
+	checkInteger(t, listNode.Values[1], 2)
+	checkInteger(t, listNode.Values[2], 3)
+}
+
+func TestParseListWithComplexElements(t *testing.T) {
+	tree := parseExpressionHelper(t, "[20*2+2, \"hello\", true and false]")
+
+	listNode := checkList(t, tree, 3)
+	checkInfix(t, listNode.Values[0], "+")
+	checkString(t, listNode.Values[1], "hello")
+	checkInfix(t, listNode.Values[2], "and")
+}
+
+func TestParseEmptyList(t *testing.T) {
+	tree := parseExpressionHelper(t, "[]")
+
+	checkList(t, tree, 0)
+}
+
 // Helper functions
 
 func parseHelper(input string) *BlockNode {
@@ -516,6 +533,17 @@ func checkSymbol(t *testing.T, n Node, v string) {
 	}
 }
 
+func checkString(t *testing.T, n Node, v string) {
+	strNode, ok := n.(*StringNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *StringNode, got %T", n)
+	}
+
+	if strNode.Value != v {
+		t.Fatalf("Wrong value for string: expected %q, got %q", v, strNode.Value)
+	}
+}
+
 func checkInfix(t *testing.T, n Node, op string) *InfixNode {
 	infixNode, ok := n.(*InfixNode)
 	if !ok {
@@ -557,4 +585,18 @@ func checkCall(t *testing.T, n Node, sym string, nargs int) *CallNode {
 	}
 
 	return callNode
+}
+
+func checkList(t *testing.T, n Node, nelem int) *ListNode {
+	listNode, ok := n.(*ListNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *ListNode, got %T", n)
+	}
+
+	if len(listNode.Values) != nelem {
+		t.Fatalf("Wrong number of list elements: expected %d, got %d",
+			nelem, len(listNode.Values))
+	}
+
+	return listNode
 }

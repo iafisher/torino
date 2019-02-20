@@ -223,7 +223,7 @@ func (p *Parser) parseExpression(precedence int) Expression {
 			if precedence < infixPrecedence {
 				if p.curToken.Type == lexer.TOKEN_LPAREN {
 					p.nextToken()
-					arglist := p.parseArglist()
+					arglist := p.parseArglist(lexer.TOKEN_RPAREN)
 					left = &CallNode{left, arglist}
 				} else {
 					left = p.parseInfix(left, getPrecedence(p.curToken.Type))
@@ -267,6 +267,9 @@ func (p *Parser) parsePrefix() Expression {
 	} else if typ == lexer.TOKEN_MINUS {
 		expr := p.parseExpression(PREC_PREFIX)
 		return &PrefixNode{val, expr}
+	} else if typ == lexer.TOKEN_LBRACKET {
+		values := p.parseArglist(lexer.TOKEN_RBRACKET)
+		return &ListNode{values}
 	} else {
 		panic(fmt.Sprintf("parsePrefix - unexpected token %s", p.curToken.Type))
 	}
@@ -279,10 +282,10 @@ func (p *Parser) parseInfix(left Expression, precedence int) Expression {
 	return &InfixNode{operator, left, right}
 }
 
-func (p *Parser) parseArglist() []Expression {
+func (p *Parser) parseArglist(terminator string) []Expression {
 	arglist := []Expression{}
 	// Special case for empty arglist
-	if p.checkCurToken(lexer.TOKEN_RPAREN) {
+	if p.checkCurToken(terminator) {
 		p.nextToken()
 		return arglist
 	}
@@ -293,7 +296,7 @@ func (p *Parser) parseArglist() []Expression {
 
 		if p.checkCurToken(lexer.TOKEN_COMMA) {
 			p.nextToken()
-		} else if p.checkCurToken(lexer.TOKEN_RPAREN) {
+		} else if p.checkCurToken(terminator) {
 			p.nextToken()
 			break
 		} else {

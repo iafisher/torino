@@ -101,6 +101,10 @@ func (l *Lexer) NextToken() *Token {
 		return l.makeTokenAndAdvance(TOKEN_LBRACE, "{")
 	case '}':
 		return l.makeTokenAndAdvance(TOKEN_RBRACE, "}")
+	case '[':
+		return l.makeTokenAndAdvance(TOKEN_LBRACKET, "[")
+	case ']':
+		return l.makeTokenAndAdvance(TOKEN_RBRACKET, "]")
 	case '\n':
 		return l.makeTokenAndAdvance(TOKEN_NEWLINE, "\n")
 	}
