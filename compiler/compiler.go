@@ -41,6 +41,8 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 		return cmp.compileFn(v)
 	case *parser.ReturnNode:
 		return cmp.compileReturn(v)
+	case *parser.WhileNode:
+		return cmp.compileWhile(v)
 	default:
 		panic(fmt.Sprintf("compileStatement - unknown statement type %T", stmt))
 	}
@@ -131,6 +133,20 @@ func (cmp *Compiler) compileFn(fnNode *parser.FnNode) []*Instruction {
 func (cmp *Compiler) compileReturn(returnNode *parser.ReturnNode) []*Instruction {
 	insts := cmp.compileExpression(returnNode.Value)
 	return append(insts, NewInst("RETURN_VALUE"))
+}
+
+func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) []*Instruction {
+	cond := cmp.compileExpression(whileNode.Cond)
+	body := cmp.Compile(whileNode.Block)
+
+	insts := cond
+
+	endJump := &data.TorinoInt{len(body) + 2}
+	insts = append(insts, NewInst("REL_JUMP_IF_FALSE", endJump))
+
+	insts = append(insts, body...)
+	startJump := &data.TorinoInt{-(len(cond) + len(body) + 1)}
+	return append(insts, NewInst("REL_JUMP", startJump))
 }
 
 func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {

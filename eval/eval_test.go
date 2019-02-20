@@ -112,6 +112,18 @@ return42()
 	checkInteger(t, val, 42)
 }
 
+func TestEvalWhileLoop(t *testing.T) {
+	input := `
+let x = 0
+while x < 42 {
+	x = x + 1
+}
+x
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 // Helper functions
 
 func evalHelper(text string) data.TorinoValue {
