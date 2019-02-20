@@ -37,8 +37,12 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 		return cmp.compileAssign(v)
 	case *parser.IfNode:
 		return cmp.compileIf(v)
+	case *parser.FnNode:
+		return cmp.compileFn(v)
+	case *parser.ReturnNode:
+		return cmp.compileReturn(v)
 	default:
-		panic("compileStatement - unknown statement type")
+		panic(fmt.Sprintf("compileStatement - unknown statement type %T", stmt))
 	}
 }
 
@@ -115,6 +119,20 @@ func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 	return insts
 }
 
+func (cmp *Compiler) compileFn(fnNode *parser.FnNode) []*Instruction {
+	insts := []*Instruction{}
+
+	body := cmp.Compile(fnNode.Body)
+
+	insts = append(insts, NewInst("PUSH_CONST", &TorinoFunction{fnNode.Params, body}))
+	return append(insts, NewInst("STORE_NAME", &data.TorinoString{fnNode.Symbol.Value}))
+}
+
+func (cmp *Compiler) compileReturn(returnNode *parser.ReturnNode) []*Instruction {
+	insts := cmp.compileExpression(returnNode.Value)
+	return append(insts, NewInst("RETURN_VALUE"))
+}
+
 func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
 	insts := cmp.compileExpression(infixNode.Right)
 	insts = append(insts, cmp.compileExpression(infixNode.Left)...)
@@ -163,4 +181,37 @@ func (cmp *Compiler) compileCall(callNode *parser.CallNode) []*Instruction {
 	insts = append(insts, cmp.compileExpression(callNode.Func)...)
 	nargs := len(callNode.Arglist)
 	return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
+}
+
+// Some data types, defined here because they use the compiler.Instruction object,
+// which would create a circular import path if they were defined in the data
+// package.
+
+type TorinoCode struct {
+	Code []*Instruction
+}
+
+func (t *TorinoCode) Torino() {}
+
+func (t *TorinoCode) String() string {
+	return "<code object>"
+}
+
+func (t *TorinoCode) Repr() string {
+	return t.String()
+}
+
+type TorinoFunction struct {
+	Params []*parser.SymbolNode
+	Body   []*Instruction
+}
+
+func (t *TorinoFunction) Torino() {}
+
+func (t *TorinoFunction) String() string {
+	return "<function object>"
+}
+
+func (t *TorinoFunction) Repr() string {
+	return t.String()
 }

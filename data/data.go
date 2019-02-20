@@ -8,7 +8,7 @@ import (
 type TorinoValue interface {
 	String() string
 	Repr() string
-	torinoValue()
+	Torino()
 }
 
 type TorinoInt struct {
@@ -23,7 +23,7 @@ func (t *TorinoInt) Repr() string {
 	return t.String()
 }
 
-func (t *TorinoInt) torinoValue() {}
+func (t *TorinoInt) Torino() {}
 
 type TorinoString struct {
 	Value string
@@ -37,7 +37,7 @@ func (t *TorinoString) Repr() string {
 	return strconv.Quote(t.Value)
 }
 
-func (t *TorinoString) torinoValue() {}
+func (t *TorinoString) Torino() {}
 
 type TorinoBool struct {
 	Value bool
@@ -55,12 +55,12 @@ func (t *TorinoBool) Repr() string {
 	return t.String()
 }
 
-func (t *TorinoBool) torinoValue() {}
+func (t *TorinoBool) Torino() {}
 
 type TorinoNone struct {
 }
 
-func (t *TorinoNone) torinoValue() {}
+func (t *TorinoNone) Torino() {}
 
 func (t *TorinoNone) String() string {
 	return "none"
@@ -74,7 +74,7 @@ type TorinoBuiltin struct {
 	F func(...TorinoValue) TorinoValue
 }
 
-func (t *TorinoBuiltin) torinoValue() {}
+func (t *TorinoBuiltin) Torino() {}
 
 func (t *TorinoBuiltin) String() string {
 	return "<built-in function>"

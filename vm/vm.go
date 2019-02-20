@@ -13,7 +13,6 @@ import (
 
 type VirtualMachine struct {
 	stack []data.TorinoValue
-	pc    int
 }
 
 func New() *VirtualMachine {
@@ -28,8 +27,26 @@ func (vm *VirtualMachine) Execute(program []*compiler.Instruction, env *Environm
 	fmt.Println("DONE")
 	*/
 
-	for vm.pc < len(program) {
-		vm.executeOne(program[vm.pc], env)
+	pc := 0
+	for pc < len(program) {
+		inst := program[pc]
+		vm.executeOne(inst, env)
+
+		// Update the program counter.
+		if inst.Name == "REL_JUMP_IF_FALSE" {
+			cond := vm.popStack().(*data.TorinoBool)
+			if !cond.Value {
+				pc += int(inst.Args[0].(*data.TorinoInt).Value)
+			} else {
+				pc += 1
+			}
+		} else if inst.Name == "REL_JUMP" {
+			pc += int(inst.Args[0].(*data.TorinoInt).Value)
+		} else if inst.Name == "RETURN_VALUE" {
+			break
+		} else {
+			pc += 1
+		}
 	}
 
 	if len(vm.stack) > 0 {
@@ -100,32 +117,39 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		arg := vm.popStack().(*data.TorinoInt)
 		vm.pushStack(&data.TorinoInt{-arg.Value})
 	} else if inst.Name == "CALL_FUNCTION" {
-		f := vm.popStack().(*data.TorinoBuiltin)
+		// Get the function itself.
+		tos := vm.popStack()
+
+		// Gather the arguments for the function.
 		args := []data.TorinoValue{}
 		for i := 0; i < inst.Args[0].(*data.TorinoInt).Value; i++ {
 			args = append(args, vm.popStack())
 		}
-		vm.pushStack(f.F(args...))
+
+		builtin, ok := tos.(*data.TorinoBuiltin)
+		if ok {
+			vm.pushStack(builtin.F(args...))
+		} else {
+			f := tos.(*compiler.TorinoFunction)
+
+			fEnv := NewEnv(env)
+
+			if len(args) != len(f.Params) {
+				panic("Too few arguments to user-defined function")
+			}
+
+			for i, param := range f.Params {
+				fEnv.Put(param.Value, args[i])
+			}
+
+			vm.pushStack(vm.Execute(f.Body, fEnv))
+		}
+		// The following operations don't affect the stack.
+	} else if inst.Name == "RETURN_VALUE" {
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
-		// Nothing to do here.
 	} else if inst.Name == "REL_JUMP" {
-		// Nothing to do here.
 	} else {
 		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
-	}
-
-	// Update the program counter.
-	if inst.Name == "REL_JUMP_IF_FALSE" {
-		cond := vm.popStack().(*data.TorinoBool)
-		if !cond.Value {
-			vm.pc += int(inst.Args[0].(*data.TorinoInt).Value)
-		} else {
-			vm.pc += 1
-		}
-	} else if inst.Name == "REL_JUMP" {
-		vm.pc += int(inst.Args[0].(*data.TorinoInt).Value)
-	} else {
-		vm.pc += 1
 	}
 }
 

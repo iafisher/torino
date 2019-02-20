@@ -87,10 +87,22 @@ x
 	checkInteger(t, val, 42)
 }
 
+func TestEvalFunctionDeclaration(t *testing.T) {
+	input := `
+fn return42() {
+	return 42
+}
+let x = return42()
+x
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 // Helper functions
 
 func evalHelper(text string) data.TorinoValue {
-	env := vm.NewEnv()
+	env := vm.NewEnv(nil)
 	return Eval(text, env)
 }
 
