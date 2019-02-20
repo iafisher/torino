@@ -99,6 +99,19 @@ x
 	checkInteger(t, val, 42)
 }
 
+func TestEvalFunctionWithGlobalVariable(t *testing.T) {
+	input := `
+let FORTY_TWO = 42
+
+fn return42() {
+	return FORTY_TWO
+}
+return42()
+`
+	val := evalHelper(input)
+	checkInteger(t, val, 42)
+}
+
 // Helper functions
 
 func evalHelper(text string) data.TorinoValue {

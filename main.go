@@ -24,7 +24,7 @@ func repl() {
 	fmt.Println("The Torino programming language.\n")
 
 	scanner := bufio.NewScanner(os.Stdin)
-	env := vm.NewEnv()
+	env := vm.NewEnv(nil)
 	for {
 		fmt.Print(">>> ")
 		scanned := scanner.Scan()
@@ -61,6 +61,6 @@ func runFile(path string) {
 
 	text := string(contents)
 
-	env := vm.NewEnv()
+	env := vm.NewEnv(nil)
 	eval.Eval(text, env)
 }
