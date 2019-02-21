@@ -86,37 +86,70 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		}
 		vm.pushStack(val)
 	} else if inst.Name == "BINARY_ADD" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("+ takes integer operands")
+		}
 		vm.pushStack(&data.TorinoInt{left.Value + right.Value})
 	} else if inst.Name == "BINARY_SUB" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("- takes integer operands")
+		}
 		vm.pushStack(&data.TorinoInt{left.Value - right.Value})
 	} else if inst.Name == "BINARY_MUL" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("* takes integer operands")
+		}
 		vm.pushStack(&data.TorinoInt{left.Value * right.Value})
 	} else if inst.Name == "BINARY_DIV" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("/ takes integer operands")
+		}
 		vm.pushStack(&data.TorinoInt{left.Value / right.Value})
 	} else if inst.Name == "BINARY_EQ" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("== takes integer operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value == right.Value})
 	} else if inst.Name == "BINARY_GT" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("> takes integer operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value > right.Value})
 	} else if inst.Name == "BINARY_LT" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("< takes integer operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value < right.Value})
 	} else if inst.Name == "BINARY_GE" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New(">= takes integer operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value >= right.Value})
 	} else if inst.Name == "BINARY_LE" {
-		left, right := vm.popTwoInts()
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return errors.New("<= takes integer operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value <= right.Value})
 	} else if inst.Name == "BINARY_AND" {
-		left, right := vm.popTwoBools()
+		left, right, ok := vm.popTwoBools()
+		if !ok {
+			return errors.New("and takes boolean operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value && right.Value})
 	} else if inst.Name == "BINARY_OR" {
-		left, right := vm.popTwoBools()
+		left, right, ok := vm.popTwoBools()
+		if !ok {
+			return errors.New("or takes boolean operands")
+		}
 		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
 	} else if inst.Name == "BINARY_INDEX" {
 		index := vm.popStack().(*data.TorinoInt)
@@ -193,14 +226,14 @@ func (vm *VirtualMachine) popStack() data.TorinoValue {
 	return ret
 }
 
-func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt) {
-	left := vm.popStack().(*data.TorinoInt)
-	right := vm.popStack().(*data.TorinoInt)
-	return left, right
+func (vm *VirtualMachine) popTwoInts() (*data.TorinoInt, *data.TorinoInt, bool) {
+	left, ok1 := vm.popStack().(*data.TorinoInt)
+	right, ok2 := vm.popStack().(*data.TorinoInt)
+	return left, right, ok1 && ok2
 }
 
-func (vm *VirtualMachine) popTwoBools() (*data.TorinoBool, *data.TorinoBool) {
-	left := vm.popStack().(*data.TorinoBool)
-	right := vm.popStack().(*data.TorinoBool)
-	return left, right
+func (vm *VirtualMachine) popTwoBools() (*data.TorinoBool, *data.TorinoBool, bool) {
+	left, ok1 := vm.popStack().(*data.TorinoBool)
+	right, ok2 := vm.popStack().(*data.TorinoBool)
+	return left, right, ok1 && ok2
 }
