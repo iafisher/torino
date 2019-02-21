@@ -29,5 +29,5 @@ func Eval(text string, env *vm.Environment) (data.TorinoValue, error) {
 		return nil, err
 	}
 
-	return vm.Execute(program, env), nil
+	return vm.Execute(program, env)
 }

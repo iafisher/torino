@@ -38,16 +38,10 @@ func repl() {
 }
 
 func oneline(text string, env *vm.Environment) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			fmt.Println("Error:", err)
-		}
-	}()
-
 	val, err := eval.Eval(text, env)
 	if err != nil {
 		fmt.Println("Error:", err)
+		return
 	}
 
 	_, isNone := val.(*data.TorinoNone)

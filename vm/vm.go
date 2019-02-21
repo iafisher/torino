@@ -6,6 +6,7 @@ Version: February 2019
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"github.com/iafisher/torino/compiler"
 	"github.com/iafisher/torino/data"
@@ -19,7 +20,8 @@ func New() *VirtualMachine {
 	return &VirtualMachine{}
 }
 
-func (vm *VirtualMachine) Execute(program []*compiler.Instruction, env *Environment) data.TorinoValue {
+func (vm *VirtualMachine) Execute(
+	program []*compiler.Instruction, env *Environment) (data.TorinoValue, error) {
 	/* Print the bytecode, for debugging.
 	for _, inst := range program {
 		fmt.Printf("%v\n", inst)
@@ -30,7 +32,10 @@ func (vm *VirtualMachine) Execute(program []*compiler.Instruction, env *Environm
 	pc := 0
 	for pc < len(program) {
 		inst := program[pc]
-		vm.executeOne(inst, env)
+		err := vm.executeOne(inst, env)
+		if err != nil {
+			return nil, err
+		}
 
 		// Update the program counter.
 		if inst.Name == "REL_JUMP_IF_FALSE" {
@@ -50,34 +55,34 @@ func (vm *VirtualMachine) Execute(program []*compiler.Instruction, env *Environm
 	}
 
 	if len(vm.stack) > 0 {
-		return vm.stack[len(vm.stack)-1]
+		return vm.stack[len(vm.stack)-1], nil
 	} else {
-		return &data.TorinoNone{}
+		return &data.TorinoNone{}, nil
 	}
 }
 
-func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) {
+func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) error {
 	if inst.Name == "PUSH_CONST" {
 		vm.pushStack(inst.Args[0])
 	} else if inst.Name == "STORE_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		_, ok := env.Get(key)
 		if ok {
-			panic(fmt.Sprintf("cannot redefine symbol %s", key))
+			return errors.New(fmt.Sprintf("cannot redefine symbol %s", key))
 		}
 		env.Put(key, vm.popStack())
 	} else if inst.Name == "ASSIGN_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		_, ok := env.Get(key)
 		if !ok {
-			panic(fmt.Sprintf("undefined symbol %s", key))
+			return errors.New(fmt.Sprintf("undefined symbol %s", key))
 		}
 		env.Put(key, vm.popStack())
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		val, ok := env.Get(key)
 		if !ok {
-			panic(fmt.Sprintf("undefined symbol %s", key))
+			return errors.New(fmt.Sprintf("undefined symbol %s", key))
 		}
 		vm.pushStack(val)
 	} else if inst.Name == "BINARY_ADD" {
@@ -128,21 +133,29 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 
 		builtin, ok := tos.(*data.TorinoBuiltin)
 		if ok {
-			vm.pushStack(builtin.F(args...))
+			res, err := builtin.F(args...)
+			if err != nil {
+				return err
+			}
+			vm.pushStack(res)
 		} else {
 			f := tos.(*compiler.TorinoFunction)
 
 			fEnv := NewEnv(env)
 
 			if len(args) != len(f.Params) {
-				panic("Too few arguments to user-defined function")
+				return errors.New("too few arguments to user-defined function")
 			}
 
 			for i, param := range f.Params {
 				fEnv.Put(param.Value, args[i])
 			}
 
-			vm.pushStack(vm.Execute(f.Body, fEnv))
+			val, err := vm.Execute(f.Body, fEnv)
+			if err != nil {
+				return err
+			}
+			vm.pushStack(val)
 		}
 		// The following operations don't affect the stack.
 	} else if inst.Name == "MAKE_LIST" {
@@ -157,8 +170,11 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
 	} else if inst.Name == "REL_JUMP" {
 	} else {
-		panic(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s", inst.Name))
+		return errors.New(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s",
+			inst.Name))
 	}
+
+	return nil
 }
 
 func (vm *VirtualMachine) pushStack(vals ...data.TorinoValue) {

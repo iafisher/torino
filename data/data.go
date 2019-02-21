@@ -72,7 +72,7 @@ func (t *TorinoNone) Repr() string {
 }
 
 type TorinoBuiltin struct {
-	F func(...TorinoValue) TorinoValue
+	F func(...TorinoValue) (TorinoValue, error)
 }
 
 func (t *TorinoBuiltin) Torino() {}

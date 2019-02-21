@@ -1,24 +1,25 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"github.com/iafisher/torino/data"
 )
 
-func builtinPrint(vals ...data.TorinoValue) data.TorinoValue {
+func builtinPrint(vals ...data.TorinoValue) (data.TorinoValue, error) {
 	if len(vals) != 1 {
-		panic("print takes one argument")
+		return nil, errors.New("print takes one argument")
 	}
 
 	fmt.Print(vals[0].String())
-	return &data.TorinoNone{}
+	return &data.TorinoNone{}, nil
 }
 
-func builtinPrintln(vals ...data.TorinoValue) data.TorinoValue {
+func builtinPrintln(vals ...data.TorinoValue) (data.TorinoValue, error) {
 	if len(vals) != 1 {
-		panic("println takes one argument")
+		return nil, errors.New("println takes one argument")
 	}
 
 	fmt.Println(vals[0].String())
-	return &data.TorinoNone{}
+	return &data.TorinoNone{}, nil
 }
