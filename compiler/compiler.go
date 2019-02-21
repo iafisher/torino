@@ -6,6 +6,7 @@ Version: February 2019
 package compiler
 
 import (
+	"errors"
 	"fmt"
 	"github.com/iafisher/torino/data"
 	"github.com/iafisher/torino/parser"
@@ -19,15 +20,19 @@ func New() *Compiler {
 	return &Compiler{}
 }
 
-func (cmp *Compiler) Compile(ast *parser.BlockNode) []*Instruction {
+func (cmp *Compiler) Compile(ast *parser.BlockNode) ([]*Instruction, error) {
 	program := []*Instruction{}
 	for _, stmt := range ast.Statements {
-		program = append(program, cmp.compileStatement(stmt)...)
+		stmtCode, err := cmp.compileStatement(stmt)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, stmtCode...)
 	}
-	return program
+	return program, nil
 }
 
-func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
+func (cmp *Compiler) compileStatement(stmt parser.Statement) ([]*Instruction, error) {
 	switch v := stmt.(type) {
 	case *parser.ExpressionStatement:
 		return cmp.compileExpression(v.Expr)
@@ -44,21 +49,21 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) []*Instruction {
 	case *parser.WhileNode:
 		return cmp.compileWhile(v)
 	default:
-		panic(fmt.Sprintf("compileStatement - unknown statement type %T", stmt))
+		return nil, errors.New(fmt.Sprintf("unknown statement type %T", stmt))
 	}
 }
 
-func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
+func (cmp *Compiler) compileExpression(expr parser.Expression) ([]*Instruction, error) {
 	insts := []*Instruction{}
 	switch v := expr.(type) {
 	case *parser.IntegerNode:
-		return append(insts, NewInst("PUSH_CONST", &data.TorinoInt{v.Value}))
+		return append(insts, NewInst("PUSH_CONST", &data.TorinoInt{v.Value})), nil
 	case *parser.SymbolNode:
-		return append(insts, NewInst("PUSH_NAME", &data.TorinoString{v.Value}))
+		return append(insts, NewInst("PUSH_NAME", &data.TorinoString{v.Value})), nil
 	case *parser.BoolNode:
-		return append(insts, NewInst("PUSH_CONST", &data.TorinoBool{v.Value}))
+		return append(insts, NewInst("PUSH_CONST", &data.TorinoBool{v.Value})), nil
 	case *parser.StringNode:
-		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value}))
+		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value})), nil
 	case *parser.ListNode:
 		return cmp.compileList(v)
 	case *parser.InfixNode:
@@ -68,28 +73,42 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) []*Instruction {
 	case *parser.CallNode:
 		return cmp.compileCall(v)
 	default:
-		panic(fmt.Sprintf("compileExpression - unknown expression type %+v (%T)",
-			expr, expr))
+		return nil, errors.New(fmt.Sprintf("unknown expression type %+v (%T", expr, expr))
 	}
 }
 
-func (cmp *Compiler) compileLet(node *parser.LetNode) []*Instruction {
-	insts := cmp.compileExpression(node.Value)
-	return append(insts, NewInst("STORE_NAME", &data.TorinoString{node.Destination.Value}))
+func (cmp *Compiler) compileLet(node *parser.LetNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(node.Value)
+	if err != nil {
+		return nil, err
+	}
+	return append(insts, NewInst("STORE_NAME", &data.TorinoString{node.Destination.Value})), nil
 }
 
-func (cmp *Compiler) compileAssign(node *parser.AssignNode) []*Instruction {
-	insts := cmp.compileExpression(node.Value)
-	return append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
+func (cmp *Compiler) compileAssign(node *parser.AssignNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(node.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	insts = append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{node.Destination.Value}))
+	return insts, nil
 }
 
-func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
+func (cmp *Compiler) compileIf(ifNode *parser.IfNode) ([]*Instruction, error) {
 	compiledBodies := make([][]*Instruction, 0, len(ifNode.Clauses))
 	compiledConds := make([][]*Instruction, 0, len(ifNode.Clauses))
 	endJump := 0
 	for _, clause := range ifNode.Clauses {
-		cond := cmp.compileExpression(clause.Cond)
-		body := cmp.Compile(clause.Body)
+		cond, err := cmp.compileExpression(clause.Cond)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err := cmp.Compile(clause.Body)
+		if err != nil {
+			return nil, err
+		}
 
 		compiledConds = append(compiledConds, cond)
 		compiledBodies = append(compiledBodies, body)
@@ -98,8 +117,13 @@ func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 	}
 
 	var elseCode []*Instruction
+	var err error
 	if ifNode.Else != nil {
-		elseCode = cmp.Compile(ifNode.Else)
+		elseCode, err = cmp.Compile(ifNode.Else)
+		if err != nil {
+			return nil, err
+		}
+
 		endJump += len(elseCode)
 	}
 
@@ -120,26 +144,39 @@ func (cmp *Compiler) compileIf(ifNode *parser.IfNode) []*Instruction {
 		insts = append(insts, elseCode...)
 	}
 
-	return insts
+	return insts, nil
 }
 
-func (cmp *Compiler) compileFn(fnNode *parser.FnNode) []*Instruction {
+func (cmp *Compiler) compileFn(fnNode *parser.FnNode) ([]*Instruction, error) {
 	insts := []*Instruction{}
 
-	body := cmp.Compile(fnNode.Body)
+	body, err := cmp.Compile(fnNode.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	insts = append(insts, NewInst("PUSH_CONST", &TorinoFunction{fnNode.Params, body}))
-	return append(insts, NewInst("STORE_NAME", &data.TorinoString{fnNode.Symbol.Value}))
+	return append(insts, NewInst("STORE_NAME", &data.TorinoString{fnNode.Symbol.Value})), nil
 }
 
-func (cmp *Compiler) compileReturn(returnNode *parser.ReturnNode) []*Instruction {
-	insts := cmp.compileExpression(returnNode.Value)
-	return append(insts, NewInst("RETURN_VALUE"))
+func (cmp *Compiler) compileReturn(returnNode *parser.ReturnNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(returnNode.Value)
+	if err != nil {
+		return nil, err
+	}
+	return append(insts, NewInst("RETURN_VALUE")), nil
 }
 
-func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) []*Instruction {
-	cond := cmp.compileExpression(whileNode.Cond)
-	body := cmp.Compile(whileNode.Block)
+func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) ([]*Instruction, error) {
+	cond, err := cmp.compileExpression(whileNode.Cond)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := cmp.Compile(whileNode.Block)
+	if err != nil {
+		return nil, err
+	}
 
 	insts := cond
 
@@ -148,65 +185,95 @@ func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) []*Instruction {
 
 	insts = append(insts, body...)
 	startJump := &data.TorinoInt{-(len(cond) + len(body) + 1)}
-	return append(insts, NewInst("REL_JUMP", startJump))
+	return append(insts, NewInst("REL_JUMP", startJump)), nil
 }
 
-func (cmp *Compiler) compileList(listNode *parser.ListNode) []*Instruction {
+func (cmp *Compiler) compileList(listNode *parser.ListNode) ([]*Instruction, error) {
 	insts := []*Instruction{}
 	for i := len(listNode.Values) - 1; i >= 0; i-- {
-		insts = append(insts, cmp.compileExpression(listNode.Values[i])...)
+		exprCode, err := cmp.compileExpression(listNode.Values[i])
+		if err != nil {
+			return nil, err
+		}
+
+		insts = append(insts, exprCode...)
 	}
-	return append(insts, NewInst("MAKE_LIST", &data.TorinoInt{len(listNode.Values)}))
+
+	insts = append(insts, NewInst("MAKE_LIST", &data.TorinoInt{len(listNode.Values)}))
+	return insts, nil
 }
 
-func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) []*Instruction {
-	insts := cmp.compileExpression(infixNode.Right)
-	insts = append(insts, cmp.compileExpression(infixNode.Left)...)
+func (cmp *Compiler) compileInfix(infixNode *parser.InfixNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(infixNode.Right)
+	if err != nil {
+		return nil, err
+	}
+
+	leftCode, err := cmp.compileExpression(infixNode.Left)
+	if err != nil {
+		return nil, err
+	}
+
+	insts = append(insts, leftCode...)
 	if infixNode.Op == "+" {
-		return append(insts, NewInst("BINARY_ADD"))
+		return append(insts, NewInst("BINARY_ADD")), nil
 	} else if infixNode.Op == "-" {
-		return append(insts, NewInst("BINARY_SUB"))
+		return append(insts, NewInst("BINARY_SUB")), nil
 	} else if infixNode.Op == "*" {
-		return append(insts, NewInst("BINARY_MUL"))
+		return append(insts, NewInst("BINARY_MUL")), nil
 	} else if infixNode.Op == "/" {
-		return append(insts, NewInst("BINARY_DIV"))
+		return append(insts, NewInst("BINARY_DIV")), nil
 	} else if infixNode.Op == "==" {
-		return append(insts, NewInst("BINARY_EQ"))
+		return append(insts, NewInst("BINARY_EQ")), nil
 	} else if infixNode.Op == ">" {
-		return append(insts, NewInst("BINARY_GT"))
+		return append(insts, NewInst("BINARY_GT")), nil
 	} else if infixNode.Op == "<" {
-		return append(insts, NewInst("BINARY_LT"))
+		return append(insts, NewInst("BINARY_LT")), nil
 	} else if infixNode.Op == ">=" {
-		return append(insts, NewInst("BINARY_GE"))
+		return append(insts, NewInst("BINARY_GE")), nil
 	} else if infixNode.Op == "<=" {
-		return append(insts, NewInst("BINARY_LE"))
+		return append(insts, NewInst("BINARY_LE")), nil
 	} else if infixNode.Op == "and" {
-		return append(insts, NewInst("BINARY_AND"))
+		return append(insts, NewInst("BINARY_AND")), nil
 	} else if infixNode.Op == "or" {
-		return append(insts, NewInst("BINARY_OR"))
+		return append(insts, NewInst("BINARY_OR")), nil
 	} else {
-		panic(fmt.Sprintf("compileExpression - unknown infix operator %s", infixNode.Op))
+		return nil, errors.New(fmt.Sprintf("unknown infix operator %s", infixNode.Op))
 	}
 }
 
-func (cmp *Compiler) compilePrefix(prefixNode *parser.PrefixNode) []*Instruction {
-	insts := cmp.compileExpression(prefixNode.Arg)
+func (cmp *Compiler) compilePrefix(prefixNode *parser.PrefixNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(prefixNode.Arg)
+	if err != nil {
+		return nil, err
+	}
+
 	if prefixNode.Op == "-" {
-		return append(insts, NewInst("UNARY_MINUS"))
+		return append(insts, NewInst("UNARY_MINUS")), nil
 	} else {
-		panic(fmt.Sprintf("compileExpression - unknown prefix operator %s",
-			prefixNode.Op))
+		return nil, errors.New(fmt.Sprintf("unknown prefix operator %s", prefixNode.Op))
 	}
 }
 
-func (cmp *Compiler) compileCall(callNode *parser.CallNode) []*Instruction {
+func (cmp *Compiler) compileCall(callNode *parser.CallNode) ([]*Instruction, error) {
 	insts := []*Instruction{}
 	for _, e := range callNode.Arglist {
-		insts = append(insts, cmp.compileExpression(e)...)
+		exprCode, err := cmp.compileExpression(e)
+		if err != nil {
+			return nil, err
+		}
+
+		insts = append(insts, exprCode...)
 	}
-	insts = append(insts, cmp.compileExpression(callNode.Func)...)
+	fCode, err := cmp.compileExpression(callNode.Func)
+	if err != nil {
+		return nil, err
+	}
+
+	insts = append(insts, fCode...)
 	nargs := len(callNode.Arglist)
-	return append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
+	insts = append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
+	return insts, nil
 }
 
 // Some data types, defined here because they use the compiler.Instruction object,

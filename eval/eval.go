@@ -24,7 +24,10 @@ func Eval(text string, env *vm.Environment) (data.TorinoValue, error) {
 	}
 
 	cmp := compiler.New()
-	program := cmp.Compile(ast)
+	program, err := cmp.Compile(ast)
+	if err != nil {
+		return nil, err
+	}
 
 	return vm.Execute(program, env), nil
 }

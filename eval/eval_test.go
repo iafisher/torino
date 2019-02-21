@@ -12,12 +12,12 @@ let abc = 666
 abc = 42
 abc
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
 func TestEvalArithmetic(t *testing.T) {
-	val := evalHelper("(42 * (1 + 2 - 1)) / 2")
+	val := evalHelper(t, "(42 * (1 + 2 - 1)) / 2")
 	checkInteger(t, val, 42)
 }
 
@@ -27,7 +27,7 @@ let eighty = 40 * 2
 let my_variable = (eighty + 6) / (1 + 1) - 1
 my_variable
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -39,7 +39,7 @@ if x > 100 {
 }
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -53,7 +53,7 @@ if true {
 }
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -67,7 +67,7 @@ if false {
 }
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -83,7 +83,7 @@ if false {
 }
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -95,7 +95,7 @@ fn return42() {
 let x = return42()
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -108,7 +108,7 @@ fn return42() {
 }
 return42()
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
@@ -120,12 +120,12 @@ while x < 42 {
 }
 x
 `
-	val := evalHelper(input)
+	val := evalHelper(t, input)
 	checkInteger(t, val, 42)
 }
 
 func TestEvalList(t *testing.T) {
-	val := evalHelper("[1, 2, 3]")
+	val := evalHelper(t, "[1, 2, 3]")
 
 	listVal := checkList(t, val, 3)
 	checkInteger(t, listVal.Values[0], 1)
@@ -135,9 +135,13 @@ func TestEvalList(t *testing.T) {
 
 // Helper functions
 
-func evalHelper(text string) data.TorinoValue {
+func evalHelper(t *testing.T, text string) data.TorinoValue {
 	env := vm.NewEnv(nil)
-	return Eval(text, env)
+	val, err := Eval(text, env)
+	if err != nil {
+		t.Fatalf("Eval error: %s", err)
+	}
+	return val
 }
 
 func checkInteger(t *testing.T, val data.TorinoValue, expected int) {
