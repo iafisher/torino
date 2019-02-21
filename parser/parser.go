@@ -79,6 +79,9 @@ func (p *Parser) parseBlock(topLevel bool) (*BlockNode, bool) {
 
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
 			p.skipNewlines()
+		} else if p.checkCurToken(lexer.TOKEN_SEMICOLON) {
+			p.nextToken()
+			p.skipNewlines()
 		} else if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
 			break
 		} else {

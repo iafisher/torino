@@ -1,9 +1,6 @@
 package lexer
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 type Lexer struct {
 	program  string
@@ -37,7 +34,6 @@ var keywords = map[string]string{
 func (l *Lexer) NextToken() *Token {
 	err := l.skipWhitespaceAndComments()
 	if err {
-		fmt.Println("ouch!")
 		return l.makeToken(TOKEN_UNKNOWN, "")
 	}
 
@@ -105,6 +101,8 @@ func (l *Lexer) NextToken() *Token {
 		return l.makeTokenAndAdvance(TOKEN_LBRACKET, "[")
 	case ']':
 		return l.makeTokenAndAdvance(TOKEN_RBRACKET, "]")
+	case ';':
+		return l.makeTokenAndAdvance(TOKEN_SEMICOLON, ";")
 	case '\n':
 		return l.makeTokenAndAdvance(TOKEN_NEWLINE, "\n")
 	}

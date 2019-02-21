@@ -492,6 +492,35 @@ func TestParseComplexIndex(t *testing.T) {
 	checkInteger(t, mulNode.Right, 2)
 }
 
+func TestSemicolonSeparatedStatements(t *testing.T) {
+	tree := parseStatementHelper(t, "if true { x; y; z }")
+
+	node, ok := tree.(*IfNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IfNode, got %T", tree)
+	}
+
+	if len(node.Clauses) != 1 {
+		t.Fatalf("Wrong number of if-elif clauses: expected 1, got %d",
+			len(node.Clauses))
+	}
+
+	if node.Else != nil {
+		t.Fatalf("Expected no else clause, but there was one")
+	}
+
+	checkBool(t, node.Clauses[0].Cond, true)
+
+	body := node.Clauses[0].Body.Statements
+	if len(body) != 3 {
+		t.Fatalf("Expected 3 statements in body, got %d", len(body))
+	}
+
+	checkSymbol(t, body[0].(*ExpressionStatement).Expr, "x")
+	checkSymbol(t, body[1].(*ExpressionStatement).Expr, "y")
+	checkSymbol(t, body[2].(*ExpressionStatement).Expr, "z")
+}
+
 // Helper functions
 
 func parseHelper(t *testing.T, input string) *BlockNode {
