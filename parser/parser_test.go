@@ -52,9 +52,8 @@ func TestParseLet(t *testing.T) {
 }
 
 func TestParseTwoLets(t *testing.T) {
-	p := New(lexer.New("let x = 10\nlet y = 20"))
+	tree := parseHelper(t, "let x = 10\nlet y = 20")
 
-	tree := p.Parse()
 	if len(tree.Statements) != 2 {
 		t.Fatalf("Expected 2 statements, got %d", len(tree.Statements))
 	}
@@ -423,7 +422,7 @@ fn foo(x, y) {
 }
 
 func TestParseBreakAndContinue(t *testing.T) {
-	tree := parseHelper("break\ncontinue")
+	tree := parseHelper(t, "break\ncontinue")
 	if len(tree.Statements) != 2 {
 		t.Fatalf("Wrong number of statements: expected 2, got %d",
 			len(tree.Statements))
@@ -466,17 +465,21 @@ func TestParseEmptyList(t *testing.T) {
 
 // Helper functions
 
-func parseHelper(input string) *BlockNode {
+func parseHelper(t *testing.T, input string) *BlockNode {
 	p := New(lexer.New(input))
-	return p.Parse()
+	tree, ok := p.Parse()
+	if !ok {
+		t.Fatalf("Parse error: %s", p.Errors()[0])
+	}
+	return tree
 }
 
 func parseExpressionHelper(t *testing.T, input string) Expression {
-	return extractExpression(t, parseHelper(input))
+	return extractExpression(t, parseHelper(t, input))
 }
 
 func parseStatementHelper(t *testing.T, input string) Statement {
-	return extractStatement(t, parseHelper(input))
+	return extractStatement(t, parseHelper(t, input))
 }
 
 func extractExpression(t *testing.T, bn *BlockNode) Expression {

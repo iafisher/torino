@@ -6,6 +6,7 @@ Version: February 2019
 package eval
 
 import (
+	"errors"
 	"github.com/iafisher/torino/compiler"
 	"github.com/iafisher/torino/data"
 	"github.com/iafisher/torino/lexer"
@@ -13,14 +14,17 @@ import (
 	"github.com/iafisher/torino/vm"
 )
 
-func Eval(text string, env *vm.Environment) data.TorinoValue {
+func Eval(text string, env *vm.Environment) (data.TorinoValue, error) {
 	vm := vm.New()
 
 	p := parser.New(lexer.New(text))
-	ast := p.Parse()
+	ast, ok := p.Parse()
+	if !ok {
+		return nil, errors.New(p.Errors()[0])
+	}
 
 	cmp := compiler.New()
 	program := cmp.Compile(ast)
 
-	return vm.Execute(program, env)
+	return vm.Execute(program, env), nil
 }

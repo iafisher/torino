@@ -45,7 +45,11 @@ func oneline(text string, env *vm.Environment) {
 		}
 	}()
 
-	val := eval.Eval(text, env)
+	val, err := eval.Eval(text, env)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
 	_, isNone := val.(*data.TorinoNone)
 	if !isNone {
 		fmt.Println(val.Repr())
@@ -62,5 +66,8 @@ func runFile(path string) {
 	text := string(contents)
 
 	env := vm.NewEnv(nil)
-	eval.Eval(text, env)
+	_, err = eval.Eval(text, env)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
 }

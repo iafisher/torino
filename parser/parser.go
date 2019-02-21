@@ -44,26 +44,37 @@ import (
 )
 
 type Parser struct {
-	lexer *lexer.Lexer
-
+	lexer    *lexer.Lexer
 	curToken *lexer.Token
+	errors   []string
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l, nil}
+	p := &Parser{l, nil, nil}
 	p.nextToken()
 	return p
 }
 
-func (p *Parser) Parse() *BlockNode {
+func (p *Parser) Parse() (*BlockNode, bool) {
 	p.skipNewlines()
 	return p.parseBlock(true)
 }
 
-func (p *Parser) parseBlock(topLevel bool) *BlockNode {
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) recordError(msg string) {
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) parseBlock(topLevel bool) (*BlockNode, bool) {
 	statements := []Statement{}
 	for {
-		stmt := p.parseStatement(topLevel)
+		stmt, ok := p.parseStatement(topLevel)
+		if !ok {
+			return nil, false
+		}
 		statements = append(statements, stmt)
 
 		if p.checkCurToken(lexer.TOKEN_NEWLINE) {
@@ -71,17 +82,20 @@ func (p *Parser) parseBlock(topLevel bool) *BlockNode {
 		} else if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
 			break
 		} else {
-			panic(fmt.Sprintf("parseBlock - unexpected token %s", p.curToken.Type))
+			err := fmt.Sprintf("unexpected token %s while parsing block", p.curToken.Type)
+			p.recordError(err)
+			return nil, false
 		}
 
 		if p.checkCurToken(lexer.TOKEN_EOF) || p.checkCurToken(lexer.TOKEN_RBRACE) {
 			break
 		}
 	}
-	return &BlockNode{statements}
+
+	return &BlockNode{statements}, true
 }
 
-func (p *Parser) parseStatement(topLevel bool) Statement {
+func (p *Parser) parseStatement(topLevel bool) (Statement, bool) {
 	if p.checkCurToken(lexer.TOKEN_LET) {
 		return p.parseLetStatement()
 	} else if p.checkCurToken(lexer.TOKEN_FOR) {
@@ -94,85 +108,125 @@ func (p *Parser) parseStatement(topLevel bool) Statement {
 		return p.parseReturnStatement()
 	} else if p.checkCurToken(lexer.TOKEN_FN) {
 		if !topLevel {
-			panic("parseStatement - function declarations must be at top level")
+			p.recordError("function declarations must be at top level")
+			return nil, false
 		}
 		return p.parseFnStatement()
 	} else if p.checkCurToken(lexer.TOKEN_BREAK) {
 		p.nextToken()
-		return &BreakNode{}
+		return &BreakNode{}, true
 	} else if p.checkCurToken(lexer.TOKEN_CONTINUE) {
 		p.nextToken()
-		return &ContinueNode{}
+		return &ContinueNode{}, true
 	} else {
-		expr := p.parseExpression(PREC_LOWEST)
+		expr, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+
 		if p.checkCurToken(lexer.TOKEN_ASSIGN) {
 			sym, ok := expr.(*SymbolNode)
 			if !ok {
-				panic("parseStatement - cannot assign to non-symbol")
+				p.recordError("cannot assign to non-symbol")
+				return nil, false
 			}
 			p.nextToken()
-			lhs := p.parseExpression(PREC_LOWEST)
-			return &AssignNode{sym, lhs}
+			lhs, ok := p.parseExpression(PREC_LOWEST)
+			if !ok {
+				return nil, false
+			}
+			return &AssignNode{sym, lhs}, true
 		} else {
-			return &ExpressionStatement{expr}
+			return &ExpressionStatement{expr}, true
 		}
 	}
 }
 
-func (p *Parser) parseLetStatement() Statement {
+func (p *Parser) parseLetStatement() (Statement, bool) {
 	p.nextToken()
 	if p.checkCurToken(lexer.TOKEN_SYMBOL) {
 		dest := &SymbolNode{p.curToken.Value}
 		p.nextToken()
 		if !p.checkCurToken(lexer.TOKEN_ASSIGN) {
-			panic("parseLetStatement - expected =")
+			p.recordError("expected = while parsing let statement")
+			return nil, false
 		}
 		p.nextToken()
-		v := p.parseExpression(PREC_LOWEST)
-		return &LetNode{dest, v}
+		v, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		return &LetNode{dest, v}, true
 	} else {
-		panic("parseLetStatement - expected symbol")
+		p.recordError("expected symbol while parsing let statement")
+		return nil, false
 	}
 }
 
-func (p *Parser) parseForStatement() Statement {
+func (p *Parser) parseForStatement() (Statement, bool) {
 	p.nextToken()
 	if p.checkCurToken(lexer.TOKEN_SYMBOL) {
 		sym := &SymbolNode{p.curToken.Value}
 		p.nextToken()
 		if !p.checkCurToken(lexer.TOKEN_IN) {
-			panic("parseForStatement - expected in")
+			p.recordError("expected in while parsing for loop")
+			return nil, false
 		}
 		p.nextToken()
-		iter := p.parseExpression(PREC_LOWEST)
-		body := p.parseBracedBlock()
-		return &ForNode{sym, iter, body}
+		iter, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		body, ok := p.parseBracedBlock()
+		if !ok {
+			return nil, false
+		}
+		return &ForNode{sym, iter, body}, true
 	} else {
-		panic("parseForStatement - expected symbol")
+		p.recordError("expected symbol while parsing for loop")
+		return nil, false
 	}
 }
 
-func (p *Parser) parseWhileStatement() Statement {
+func (p *Parser) parseWhileStatement() (Statement, bool) {
 	p.nextToken()
-	cond := p.parseExpression(PREC_LOWEST)
-	body := p.parseBracedBlock()
-	return &WhileNode{cond, body}
+	cond, ok := p.parseExpression(PREC_LOWEST)
+	if !ok {
+		return nil, false
+	}
+	body, ok := p.parseBracedBlock()
+	if !ok {
+		return nil, false
+	}
+	return &WhileNode{cond, body}, true
 }
 
-func (p *Parser) parseIfStatement() Statement {
+func (p *Parser) parseIfStatement() (Statement, bool) {
 	p.nextToken()
 	clauses := []*IfClause{}
 
 	// Parse the if block.
-	cond := p.parseExpression(PREC_LOWEST)
-	body := p.parseBracedBlock()
+	cond, ok := p.parseExpression(PREC_LOWEST)
+	if !ok {
+		return nil, false
+	}
+	body, ok := p.parseBracedBlock()
+	if !ok {
+		return nil, false
+	}
 	clauses = append(clauses, &IfClause{cond, body})
 
 	// Parse zero or more elif blocks.
 	for p.checkCurToken(lexer.TOKEN_ELIF) {
 		p.nextToken()
-		elifCond := p.parseExpression(PREC_LOWEST)
-		elifBody := p.parseBracedBlock()
+		elifCond, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		elifBody, ok := p.parseBracedBlock()
+		if !ok {
+			return nil, false
+		}
 		clauses = append(clauses, &IfClause{elifCond, elifBody})
 	}
 
@@ -180,41 +234,60 @@ func (p *Parser) parseIfStatement() Statement {
 	var elseBody *BlockNode = nil
 	if p.checkCurToken(lexer.TOKEN_ELSE) {
 		p.nextToken()
-		elseBody = p.parseBracedBlock()
+		elseBody, ok = p.parseBracedBlock()
+		if !ok {
+			return nil, false
+		}
 	}
 
-	return &IfNode{clauses, elseBody}
+	return &IfNode{clauses, elseBody}, true
 }
 
-func (p *Parser) parseReturnStatement() Statement {
+func (p *Parser) parseReturnStatement() (Statement, bool) {
 	p.nextToken()
 	if p.checkCurToken(lexer.TOKEN_NEWLINE) || p.checkCurToken(lexer.TOKEN_EOF) {
-		return &ReturnNode{nil}
+		return &ReturnNode{nil}, true
 	} else {
-		return &ReturnNode{p.parseExpression(PREC_LOWEST)}
+		expr, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+
+		return &ReturnNode{expr}, true
 	}
 }
 
-func (p *Parser) parseFnStatement() Statement {
+func (p *Parser) parseFnStatement() (Statement, bool) {
 	p.nextToken()
 	if !p.checkCurToken(lexer.TOKEN_SYMBOL) {
-		panic("parseFnStatement - expected symbol")
+		p.recordError("expected symbol while parsing function declaration")
+		return nil, false
 	}
 	sym := &SymbolNode{p.curToken.Value}
 
 	p.nextToken()
 	if !p.checkCurToken(lexer.TOKEN_LPAREN) {
-		panic("parseFnStatement - expected (")
+		p.recordError("expected ( while parsing function declaration")
+		return nil, false
 	}
 	p.nextToken()
-	params := p.parseParamList()
+	params, ok := p.parseParamList()
+	if !ok {
+		return nil, false
+	}
 
-	body := p.parseBracedBlock()
-	return &FnNode{sym, params, body}
+	body, ok := p.parseBracedBlock()
+	if !ok {
+		return nil, false
+	}
+	return &FnNode{sym, params, body}, true
 }
 
-func (p *Parser) parseExpression(precedence int) Expression {
-	left := p.parsePrefix()
+func (p *Parser) parseExpression(precedence int) (Expression, bool) {
+	left, ok := p.parsePrefix()
+	if !ok {
+		return nil, false
+	}
 
 	for {
 		// Keep consuming infix operators until we hit either a non-infix token or an
@@ -223,10 +296,16 @@ func (p *Parser) parseExpression(precedence int) Expression {
 			if precedence < infixPrecedence {
 				if p.curToken.Type == lexer.TOKEN_LPAREN {
 					p.nextToken()
-					arglist := p.parseArglist(lexer.TOKEN_RPAREN)
+					arglist, ok := p.parseArglist(lexer.TOKEN_RPAREN)
+					if !ok {
+						return nil, false
+					}
 					left = &CallNode{left, arglist}
 				} else {
-					left = p.parseInfix(left, getPrecedence(p.curToken.Type))
+					left, ok = p.parseInfix(left, getPrecedence(p.curToken.Type))
+					if !ok {
+						return nil, false
+					}
 				}
 			} else {
 				break
@@ -236,62 +315,76 @@ func (p *Parser) parseExpression(precedence int) Expression {
 		}
 	}
 
-	return left
+	return left, true
 }
 
-func (p *Parser) parsePrefix() Expression {
+func (p *Parser) parsePrefix() (Expression, bool) {
 	typ := p.curToken.Type
 	val := p.curToken.Value
 	p.nextToken()
 	if typ == lexer.TOKEN_INT {
 		v, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
-			panic("parsePrefix - could not parse integer token")
+			p.recordError("could not parse integer token")
+			return nil, false
 		}
-		return &IntegerNode{int(v)}
+		return &IntegerNode{int(v)}, true
 	} else if typ == lexer.TOKEN_STRING {
-		return &StringNode{val}
+		return &StringNode{val}, true
 	} else if typ == lexer.TOKEN_SYMBOL {
-		return &SymbolNode{val}
+		return &SymbolNode{val}, true
 	} else if typ == lexer.TOKEN_TRUE {
-		return &BoolNode{true}
+		return &BoolNode{true}, true
 	} else if typ == lexer.TOKEN_FALSE {
-		return &BoolNode{false}
+		return &BoolNode{false}, true
 	} else if typ == lexer.TOKEN_LPAREN {
-		expr := p.parseExpression(PREC_LOWEST)
-		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
-			panic("parsePrefix - expected )")
+		expr, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
 		}
+
+		if !p.checkCurToken(lexer.TOKEN_RPAREN) {
+			p.recordError("expected )")
+			return nil, false
+		}
+
 		p.nextToken()
-		return expr
+		return expr, true
 	} else if typ == lexer.TOKEN_MINUS {
-		expr := p.parseExpression(PREC_PREFIX)
-		return &PrefixNode{val, expr}
+		expr, ok := p.parseExpression(PREC_PREFIX)
+		return &PrefixNode{val, expr}, ok
 	} else if typ == lexer.TOKEN_LBRACKET {
-		values := p.parseArglist(lexer.TOKEN_RBRACKET)
-		return &ListNode{values}
+		values, ok := p.parseArglist(lexer.TOKEN_RBRACKET)
+		return &ListNode{values}, ok
 	} else {
-		panic(fmt.Sprintf("parsePrefix - unexpected token %s", p.curToken.Type))
+		p.recordError(fmt.Sprintf("unexpected token %s", p.curToken.Type))
+		return nil, false
 	}
 }
 
-func (p *Parser) parseInfix(left Expression, precedence int) Expression {
+func (p *Parser) parseInfix(left Expression, precedence int) (Expression, bool) {
 	operator := p.curToken.Value
 	p.nextToken()
-	right := p.parseExpression(precedence)
-	return &InfixNode{operator, left, right}
+	right, ok := p.parseExpression(precedence)
+	if !ok {
+		return nil, false
+	}
+	return &InfixNode{operator, left, right}, true
 }
 
-func (p *Parser) parseArglist(terminator string) []Expression {
+func (p *Parser) parseArglist(terminator string) ([]Expression, bool) {
 	arglist := []Expression{}
 	// Special case for empty arglist
 	if p.checkCurToken(terminator) {
 		p.nextToken()
-		return arglist
+		return arglist, true
 	}
 
 	for {
-		expr := p.parseExpression(PREC_LOWEST)
+		expr, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
 		arglist = append(arglist, expr)
 
 		if p.checkCurToken(lexer.TOKEN_COMMA) {
@@ -300,24 +393,26 @@ func (p *Parser) parseArglist(terminator string) []Expression {
 			p.nextToken()
 			break
 		} else {
-			panic(fmt.Sprintf("parseArglist - unexpected token %s", p.curToken.Type))
+			p.recordError(fmt.Sprintf("unexpected token %s while parsing argument list",
+				p.curToken.Type))
+			return nil, false
 		}
 	}
-	return arglist
+	return arglist, true
 }
 
-func (p *Parser) parseParamList() []*SymbolNode {
+func (p *Parser) parseParamList() ([]*SymbolNode, bool) {
 	paramlist := []*SymbolNode{}
 	// Special case for empty list
 	if p.checkCurToken(lexer.TOKEN_RPAREN) {
 		p.nextToken()
-		return paramlist
+		return paramlist, true
 	}
 
 	for {
 		if !p.checkCurToken(lexer.TOKEN_SYMBOL) {
-			panic(fmt.Sprintf("parseParamList - expected symbol, got %s",
-				p.curToken.Type))
+			p.recordError("expected symbol while parsing parameter list")
+			return nil, false
 		}
 		paramlist = append(paramlist, &SymbolNode{p.curToken.Value})
 
@@ -328,15 +423,18 @@ func (p *Parser) parseParamList() []*SymbolNode {
 			p.nextToken()
 			break
 		} else {
-			panic(fmt.Sprintf("parseParamList - unexpected token %s", p.curToken.Type))
+			p.recordError(fmt.Sprintf("unexpected token %s while parsing parameter list",
+				p.curToken.Type))
+			return nil, false
 		}
 	}
-	return paramlist
+	return paramlist, true
 }
 
-func (p *Parser) parseBracedBlock() *BlockNode {
+func (p *Parser) parseBracedBlock() (*BlockNode, bool) {
 	if !p.checkCurToken(lexer.TOKEN_LBRACE) {
-		panic("parseBracedBlock - expected {")
+		p.recordError("expected { while parsing block")
+		return nil, false
 	}
 	p.nextToken()
 
@@ -344,17 +442,21 @@ func (p *Parser) parseBracedBlock() *BlockNode {
 
 	if p.checkCurToken(lexer.TOKEN_RBRACE) {
 		p.nextToken()
-		return &BlockNode{[]Statement{}}
+		return &BlockNode{[]Statement{}}, true
 	}
 
-	block := p.parseBlock(false)
+	block, ok := p.parseBlock(false)
+	if !ok {
+		return nil, false
+	}
 
 	if !p.checkCurToken(lexer.TOKEN_RBRACE) {
-		panic("parseBracedBlock - expected }")
+		p.recordError("expected } while parsing block")
+		return nil, false
 	}
 	p.nextToken()
 
-	return block
+	return block, true
 }
 
 func (p *Parser) checkCurToken(expectedType string) bool {
