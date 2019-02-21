@@ -118,6 +118,13 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "BINARY_OR" {
 		left, right := vm.popTwoBools()
 		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
+	} else if inst.Name == "BINARY_INDEX" {
+		index := vm.popStack().(*data.TorinoInt)
+		indexed := vm.popStack().(*data.TorinoList)
+		if index.Value < 0 || index.Value >= len(indexed.Values) {
+			return errors.New("index out of bounds")
+		}
+		vm.pushStack(indexed.Values[index.Value])
 	} else if inst.Name == "UNARY_MINUS" {
 		arg := vm.popStack().(*data.TorinoInt)
 		vm.pushStack(&data.TorinoInt{-arg.Value})
@@ -170,8 +177,7 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
 	} else if inst.Name == "REL_JUMP" {
 	} else {
-		return errors.New(fmt.Sprintf("VirtualMachine.Execute - unknown instruction %s",
-			inst.Name))
+		return errors.New(fmt.Sprintf("unknown instruction %s", inst.Name))
 	}
 
 	return nil

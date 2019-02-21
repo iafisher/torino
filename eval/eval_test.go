@@ -133,6 +133,12 @@ func TestEvalList(t *testing.T) {
 	checkInteger(t, listVal.Values[2], 3)
 }
 
+func TestEvalIndex(t *testing.T) {
+	val := evalHelper(t, "[\"a\", \"b\", \"c\"][2]")
+
+	checkString(t, val, "c")
+}
+
 // Helper functions
 
 func evalHelper(t *testing.T, text string) data.TorinoValue {
@@ -152,6 +158,17 @@ func checkInteger(t *testing.T, val data.TorinoValue, expected int) {
 
 	if intVal.Value != expected {
 		t.Fatalf("Wrong integer value: expected %d, got %d", expected, intVal.Value)
+	}
+}
+
+func checkString(t *testing.T, val data.TorinoValue, expected string) {
+	strVal, ok := val.(*data.TorinoString)
+	if !ok {
+		t.Fatalf("Wrong Torino type: expected *TorinoString, got %T", val)
+	}
+
+	if strVal.Value != expected {
+		t.Fatalf("Wrong string value: expected %q, got %q", expected, strVal.Value)
 	}
 }
 

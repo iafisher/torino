@@ -72,6 +72,8 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) ([]*Instruction, 
 		return cmp.compilePrefix(v)
 	case *parser.CallNode:
 		return cmp.compileCall(v)
+	case *parser.IndexNode:
+		return cmp.compileIndex(v)
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown expression type %+v (%T)", expr, expr))
 	}
@@ -274,6 +276,21 @@ func (cmp *Compiler) compileCall(callNode *parser.CallNode) ([]*Instruction, err
 	nargs := len(callNode.Arglist)
 	insts = append(insts, NewInst("CALL_FUNCTION", &data.TorinoInt{nargs}))
 	return insts, nil
+}
+
+func (cmp *Compiler) compileIndex(indexNode *parser.IndexNode) ([]*Instruction, error) {
+	insts, err := cmp.compileExpression(indexNode.Indexed)
+	if err != nil {
+		return nil, err
+	}
+
+	indexCode, err := cmp.compileExpression(indexNode.Index)
+	if err != nil {
+		return nil, err
+	}
+
+	insts = append(insts, indexCode...)
+	return append(insts, NewInst("BINARY_INDEX")), nil
 }
 
 // Some data types, defined here because they use the compiler.Instruction object,
