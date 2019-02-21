@@ -139,3 +139,10 @@ type ListNode struct {
 }
 
 func (n *ListNode) expressionNode() {}
+
+type IndexNode struct {
+	Indexed Expression
+	Index   Expression
+}
+
+func (n *IndexNode) expressionNode() {}

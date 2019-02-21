@@ -463,6 +463,35 @@ func TestParseEmptyList(t *testing.T) {
 	checkList(t, tree, 0)
 }
 
+func TestParseIndex(t *testing.T) {
+	tree := parseExpressionHelper(t, "x[0]")
+
+	node, ok := tree.(*IndexNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IndexNode, got %T", tree)
+	}
+
+	checkSymbol(t, node.Indexed, "x")
+	checkInteger(t, node.Index, 0)
+}
+
+func TestParseComplexIndex(t *testing.T) {
+	tree := parseExpressionHelper(t, "([] + [])[1*2]")
+
+	node, ok := tree.(*IndexNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *IndexNode, got %T", tree)
+	}
+
+	addNode := checkInfix(t, node.Indexed, "+")
+	checkList(t, addNode.Left, 0)
+	checkList(t, addNode.Right, 0)
+
+	mulNode := checkInfix(t, node.Index, "*")
+	checkInteger(t, mulNode.Left, 1)
+	checkInteger(t, mulNode.Right, 2)
+}
+
 // Helper functions
 
 func parseHelper(t *testing.T, input string) *BlockNode {

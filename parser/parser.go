@@ -294,13 +294,28 @@ func (p *Parser) parseExpression(precedence int) (Expression, bool) {
 		// infix operator with a lower precedence.
 		if infixPrecedence, ok := precedenceMap[p.curToken.Type]; ok {
 			if precedence < infixPrecedence {
-				if p.curToken.Type == lexer.TOKEN_LPAREN {
+				if p.checkCurToken(lexer.TOKEN_LPAREN) {
 					p.nextToken()
 					arglist, ok := p.parseArglist(lexer.TOKEN_RPAREN)
 					if !ok {
 						return nil, false
 					}
+
 					left = &CallNode{left, arglist}
+				} else if p.checkCurToken(lexer.TOKEN_LBRACKET) {
+					p.nextToken()
+					index, ok := p.parseExpression(PREC_LOWEST)
+					if !ok {
+						return nil, false
+					}
+
+					if !p.checkCurToken(lexer.TOKEN_RBRACKET) {
+						p.recordError("expected ] while parsing index expression")
+						return nil, false
+					}
+					p.nextToken()
+
+					left = &IndexNode{left, index}
 				} else {
 					left, ok = p.parseInfix(left, getPrecedence(p.curToken.Type))
 					if !ok {
@@ -491,7 +506,7 @@ const (
 	PREC_ADD_SUB
 	PREC_MUL_DIV
 	PREC_PREFIX
-	PREC_CALL
+	PREC_CALL_INDEX
 )
 
 var precedenceMap = map[string]int{
@@ -504,7 +519,8 @@ var precedenceMap = map[string]int{
 	lexer.TOKEN_MINUS:    PREC_ADD_SUB,
 	lexer.TOKEN_ASTERISK: PREC_MUL_DIV,
 	lexer.TOKEN_SLASH:    PREC_MUL_DIV,
-	lexer.TOKEN_LPAREN:   PREC_CALL,
+	lexer.TOKEN_LPAREN:   PREC_CALL_INDEX,
+	lexer.TOKEN_LBRACKET: PREC_CALL_INDEX,
 	lexer.TOKEN_AND:      PREC_AND,
 	lexer.TOKEN_OR:       PREC_OR,
 }

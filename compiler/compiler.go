@@ -73,7 +73,7 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) ([]*Instruction, 
 	case *parser.CallNode:
 		return cmp.compileCall(v)
 	default:
-		return nil, errors.New(fmt.Sprintf("unknown expression type %+v (%T", expr, expr))
+		return nil, errors.New(fmt.Sprintf("unknown expression type %+v (%T)", expr, expr))
 	}
 }
 
