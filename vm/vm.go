@@ -152,14 +152,26 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		}
 		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
 	} else if inst.Name == "BINARY_INDEX" {
-		index := vm.popStack().(*data.TorinoInt)
-		indexed := vm.popStack().(*data.TorinoList)
+		index, ok := vm.popStack().(*data.TorinoInt)
+		if !ok {
+			return errors.New("index must be an integer")
+		}
+
+		indexed, ok := vm.popStack().(*data.TorinoList)
+		if !ok {
+			return errors.New("only lists may be indexed")
+		}
+
 		if index.Value < 0 || index.Value >= len(indexed.Values) {
 			return errors.New("index out of bounds")
 		}
 		vm.pushStack(indexed.Values[index.Value])
 	} else if inst.Name == "UNARY_MINUS" {
-		arg := vm.popStack().(*data.TorinoInt)
+		arg, ok := vm.popStack().(*data.TorinoInt)
+		if !ok {
+			return errors.New("unary - takes integer operand")
+		}
+
 		vm.pushStack(&data.TorinoInt{-arg.Value})
 	} else if inst.Name == "CALL_FUNCTION" {
 		// Get the function itself.
@@ -179,12 +191,15 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			}
 			vm.pushStack(res)
 		} else {
-			f := tos.(*compiler.TorinoFunction)
+			f, ok := tos.(*compiler.TorinoFunction)
+			if !ok {
+				return errors.New("cannot apply non-function")
+			}
 
 			fEnv := NewEnv(env)
 
 			if len(args) != len(f.Params) {
-				return errors.New("too few arguments to user-defined function")
+				return errors.New("wrong number of arguments to user-defined function")
 			}
 
 			for i, param := range f.Params {
