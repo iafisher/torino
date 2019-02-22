@@ -521,6 +521,22 @@ func TestSemicolonSeparatedStatements(t *testing.T) {
 	checkSymbol(t, body[2].(*ExpressionStatement).Expr, "z")
 }
 
+func TestMapLiteral(t *testing.T) {
+	tree := parseExpressionHelper(t, "{1: \"one\", 2: \"two\"}")
+
+	mapNode := checkMap(t, tree, 2)
+	checkInteger(t, mapNode.Values[0].Key, 1)
+	checkString(t, mapNode.Values[0].Value, "one")
+	checkInteger(t, mapNode.Values[1].Key, 2)
+	checkString(t, mapNode.Values[1].Value, "two")
+}
+
+func TestEmptyMapLiteral(t *testing.T) {
+	tree := parseExpressionHelper(t, "{}")
+
+	checkMap(t, tree, 0)
+}
+
 // Helper functions
 
 func parseHelper(t *testing.T, input string) *BlockNode {
@@ -660,4 +676,18 @@ func checkList(t *testing.T, n Node, nelem int) *ListNode {
 	}
 
 	return listNode
+}
+
+func checkMap(t *testing.T, n Node, nelem int) *MapNode {
+	mapNode, ok := n.(*MapNode)
+	if !ok {
+		t.Fatalf("Wrong AST type: expected *MapNode, got %T", n)
+	}
+
+	if len(mapNode.Values) != nelem {
+		t.Fatalf("Wrong number of map elements: expected %d, got %d",
+			nelem, len(mapNode.Values))
+	}
+
+	return mapNode
 }

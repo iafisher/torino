@@ -101,6 +101,8 @@ func (l *Lexer) NextToken() *Token {
 		return l.makeTokenAndAdvance(TOKEN_LBRACKET, "[")
 	case ']':
 		return l.makeTokenAndAdvance(TOKEN_RBRACKET, "]")
+	case ':':
+		return l.makeTokenAndAdvance(TOKEN_COLON, ":")
 	case ';':
 		return l.makeTokenAndAdvance(TOKEN_SEMICOLON, ";")
 	case '\n':

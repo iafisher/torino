@@ -146,3 +146,14 @@ type IndexNode struct {
 }
 
 func (n *IndexNode) expressionNode() {}
+
+type MapNode struct {
+	Values []*MapKeyNode
+}
+
+func (n *MapNode) expressionNode() {}
+
+type MapKeyNode struct {
+	Key   Expression
+	Value Expression
+}

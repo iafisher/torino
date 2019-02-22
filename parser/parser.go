@@ -374,6 +374,8 @@ func (p *Parser) parsePrefix() (Expression, bool) {
 	} else if typ == lexer.TOKEN_LBRACKET {
 		values, ok := p.parseArglist(lexer.TOKEN_RBRACKET)
 		return &ListNode{values}, ok
+	} else if typ == lexer.TOKEN_LBRACE {
+		return p.parseMap()
 	} else {
 		p.recordError(fmt.Sprintf("unexpected token %s", p.curToken.Type))
 		return nil, false
@@ -392,7 +394,7 @@ func (p *Parser) parseInfix(left Expression, precedence int) (Expression, bool) 
 
 func (p *Parser) parseArglist(terminator string) ([]Expression, bool) {
 	arglist := []Expression{}
-	// Special case for empty arglist
+	// Special case for empty arglist.
 	if p.checkCurToken(terminator) {
 		p.nextToken()
 		return arglist, true
@@ -421,7 +423,7 @@ func (p *Parser) parseArglist(terminator string) ([]Expression, bool) {
 
 func (p *Parser) parseParamList() ([]*SymbolNode, bool) {
 	paramlist := []*SymbolNode{}
-	// Special case for empty list
+	// Special case for empty list.
 	if p.checkCurToken(lexer.TOKEN_RPAREN) {
 		p.nextToken()
 		return paramlist, true
@@ -447,6 +449,46 @@ func (p *Parser) parseParamList() ([]*SymbolNode, bool) {
 		}
 	}
 	return paramlist, true
+}
+
+func (p *Parser) parseMap() (*MapNode, bool) {
+	values := []*MapKeyNode{}
+	// Special case for empty map.
+	if p.checkCurToken(lexer.TOKEN_RBRACE) {
+		p.nextToken()
+		return &MapNode{values}, true
+	}
+
+	for {
+		key, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+
+		if !p.checkCurToken(lexer.TOKEN_COLON) {
+			p.recordError("expected : while parsing map")
+			return nil, false
+		}
+
+		p.nextToken()
+		val, ok := p.parseExpression(PREC_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		values = append(values, &MapKeyNode{key, val})
+
+		if p.checkCurToken(lexer.TOKEN_RBRACE) {
+			p.nextToken()
+			break
+		} else if p.checkCurToken(lexer.TOKEN_COMMA) {
+			p.nextToken()
+		} else {
+			p.recordError(fmt.Sprintf("unexpected token %s while parsing map",
+				p.curToken.Type))
+			return nil, false
+		}
+	}
+	return &MapNode{values}, true
 }
 
 func (p *Parser) parseBracedBlock() (*BlockNode, bool) {
