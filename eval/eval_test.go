@@ -139,6 +139,24 @@ func TestEvalIndex(t *testing.T) {
 	checkString(t, val, "c")
 }
 
+func TestEvalMap(t *testing.T) {
+	val := evalHelper(t, "{\"one\": 1, \"two\": 1+1}")
+
+	mapVal := checkMap(t, val, 2)
+
+	first, ok := mapVal.Get(&data.TorinoString{"one"})
+	if !ok {
+		t.Fatalf("Expected \"one\" to be in the map")
+	}
+	checkInteger(t, first, 1)
+
+	second, ok := mapVal.Get(&data.TorinoString{"two"})
+	if !ok {
+		t.Fatalf("Expected \"two\" to be in the map")
+	}
+	checkInteger(t, second, 2)
+}
+
 // Helper functions
 
 func evalHelper(t *testing.T, text string) data.TorinoValue {
@@ -184,4 +202,18 @@ func checkList(t *testing.T, val data.TorinoValue, nelems int) *data.TorinoList 
 	}
 
 	return listVal
+}
+
+func checkMap(t *testing.T, val data.TorinoValue, nelems int) *data.TorinoMap {
+	mapVal, ok := val.(*data.TorinoMap)
+	if !ok {
+		t.Fatalf("Wrong Torino type: expected *TorinoMap, got %T", val)
+	}
+
+	if len(mapVal.Values) != nelems {
+		t.Fatalf("Wrong number of map elements: expected %d, got %d",
+			nelems, len(mapVal.Values))
+	}
+
+	return mapVal
 }

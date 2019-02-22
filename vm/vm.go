@@ -221,6 +221,16 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			values = append(values, vm.popStack())
 		}
 		vm.pushStack(&data.TorinoList{values})
+	} else if inst.Name == "MAKE_MAP" {
+		nelems := inst.Args[0].(*data.TorinoInt).Value
+
+		mapVal := &data.TorinoMap{map[string]data.TorinoValue{}}
+		for i := 0; i < nelems; i++ {
+			val := vm.popStack()
+			key := vm.popStack()
+			mapVal.Put(key, val)
+		}
+		vm.pushStack(mapVal)
 	} else if inst.Name == "RETURN_VALUE" {
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
 	} else if inst.Name == "REL_JUMP" {

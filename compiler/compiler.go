@@ -66,6 +66,8 @@ func (cmp *Compiler) compileExpression(expr parser.Expression) ([]*Instruction, 
 		return append(insts, NewInst("PUSH_CONST", &data.TorinoString{v.Value})), nil
 	case *parser.ListNode:
 		return cmp.compileList(v)
+	case *parser.MapNode:
+		return cmp.compileMap(v)
 	case *parser.InfixNode:
 		return cmp.compileInfix(v)
 	case *parser.PrefixNode:
@@ -202,6 +204,26 @@ func (cmp *Compiler) compileList(listNode *parser.ListNode) ([]*Instruction, err
 	}
 
 	insts = append(insts, NewInst("MAKE_LIST", &data.TorinoInt{len(listNode.Values)}))
+	return insts, nil
+}
+
+func (cmp *Compiler) compileMap(mapNode *parser.MapNode) ([]*Instruction, error) {
+	insts := []*Instruction{}
+	for _, item := range mapNode.Values {
+		keyCode, err := cmp.compileExpression(item.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		valCode, err := cmp.compileExpression(item.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		insts = append(insts, keyCode...)
+		insts = append(insts, valCode...)
+	}
+	insts = append(insts, NewInst("MAKE_MAP", &data.TorinoInt{len(mapNode.Values)}))
 	return insts, nil
 }
 
