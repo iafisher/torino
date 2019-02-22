@@ -171,6 +171,17 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			}
 
 			vm.pushStack(val)
+		case *data.TorinoString:
+			index, ok := vm.popStack().(*data.TorinoInt)
+			if !ok {
+				return errors.New("index must be an integer")
+			}
+
+			if index.Value < 0 || index.Value >= len(indexed.Value) {
+				return errors.New("index out of bounds")
+			}
+
+			vm.pushStack(&data.TorinoString{string(indexed.Value[index.Value])})
 		default:
 			return errors.New("only lists and maps may be indexed")
 		}

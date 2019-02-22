@@ -168,6 +168,12 @@ x
 	checkInteger(t, val, 1)
 }
 
+func TestEvalIndexStr(t *testing.T) {
+	val := evalHelper(t, "\"abc\"[0]")
+
+	checkString(t, val, "a")
+}
+
 // Helper functions
 
 func evalHelper(t *testing.T, text string) data.TorinoValue {
