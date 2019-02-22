@@ -301,17 +301,17 @@ func (cmp *Compiler) compileCall(callNode *parser.CallNode) ([]*Instruction, err
 }
 
 func (cmp *Compiler) compileIndex(indexNode *parser.IndexNode) ([]*Instruction, error) {
-	insts, err := cmp.compileExpression(indexNode.Indexed)
+	insts, err := cmp.compileExpression(indexNode.Index)
 	if err != nil {
 		return nil, err
 	}
 
-	indexCode, err := cmp.compileExpression(indexNode.Index)
+	indexedCode, err := cmp.compileExpression(indexNode.Indexed)
 	if err != nil {
 		return nil, err
 	}
 
-	insts = append(insts, indexCode...)
+	insts = append(insts, indexedCode...)
 	return append(insts, NewInst("BINARY_INDEX")), nil
 }
 

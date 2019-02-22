@@ -157,6 +157,17 @@ func TestEvalMap(t *testing.T) {
 	checkInteger(t, second, 2)
 }
 
+func TestEvalIndexMap(t *testing.T) {
+	input := `
+let m = {"one": 1}
+let x = m["one"]
+x
+`
+	val := evalHelper(t, input)
+
+	checkInteger(t, val, 1)
+}
+
 // Helper functions
 
 func evalHelper(t *testing.T, text string) data.TorinoValue {

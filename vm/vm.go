@@ -152,20 +152,28 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		}
 		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
 	} else if inst.Name == "BINARY_INDEX" {
-		index, ok := vm.popStack().(*data.TorinoInt)
-		if !ok {
-			return errors.New("index must be an integer")
-		}
+		switch indexed := vm.popStack().(type) {
+		case *data.TorinoList:
+			index, ok := vm.popStack().(*data.TorinoInt)
+			if !ok {
+				return errors.New("index must be an integer")
+			}
 
-		indexed, ok := vm.popStack().(*data.TorinoList)
-		if !ok {
-			return errors.New("only lists may be indexed")
-		}
+			if index.Value < 0 || index.Value >= len(indexed.Values) {
+				return errors.New("index out of bounds")
+			}
+			vm.pushStack(indexed.Values[index.Value])
+		case *data.TorinoMap:
+			index := vm.popStack()
+			val, ok := indexed.Get(index)
+			if !ok {
+				return errors.New("key not in map")
+			}
 
-		if index.Value < 0 || index.Value >= len(indexed.Values) {
-			return errors.New("index out of bounds")
+			vm.pushStack(val)
+		default:
+			return errors.New("only lists and maps may be indexed")
 		}
-		vm.pushStack(indexed.Values[index.Value])
 	} else if inst.Name == "UNARY_MINUS" {
 		arg, ok := vm.popStack().(*data.TorinoInt)
 		if !ok {
