@@ -11,6 +11,7 @@ func NewEnv(enclosing *Environment) *Environment {
 	env := &Environment{map[string]data.TorinoValue{}, enclosing}
 	env.Put("print", &data.TorinoBuiltin{builtinPrint})
 	env.Put("println", &data.TorinoBuiltin{builtinPrintln})
+	env.Put("range", &data.TorinoBuiltin{builtinRange})
 	return env
 }
 
