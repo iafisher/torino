@@ -32,26 +32,16 @@ func (vm *VirtualMachine) Execute(
 	pc := 0
 	for pc < len(program) {
 		inst := program[pc]
-		err := vm.executeOne(inst, env)
+		jump, err := vm.executeOne(inst, env)
 		if err != nil {
 			return nil, err
 		}
 
-		// Update the program counter.
-		if inst.Name == "REL_JUMP_IF_FALSE" {
-			cond := vm.popStack().(*data.TorinoBool)
-			if !cond.Value {
-				pc += int(inst.Args[0].(*data.TorinoInt).Value)
-			} else {
-				pc += 1
-			}
-		} else if inst.Name == "REL_JUMP" {
-			pc += int(inst.Args[0].(*data.TorinoInt).Value)
-		} else if inst.Name == "RETURN_VALUE" {
+		if inst.Name == "RETURN_VALUE" {
 			break
-		} else {
-			pc += 1
 		}
+
+		pc += jump
 	}
 
 	if len(vm.stack) > 0 {
@@ -61,94 +51,96 @@ func (vm *VirtualMachine) Execute(
 	}
 }
 
-func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) error {
+func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environment) (int, error) {
 	if inst.Name == "PUSH_CONST" {
 		vm.pushStack(inst.Args[0])
 	} else if inst.Name == "STORE_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		_, ok := env.Get(key)
 		if ok {
-			return errors.New(fmt.Sprintf("cannot redefine symbol %s", key))
+			return 0, errors.New(fmt.Sprintf("cannot redefine symbol %s", key))
 		}
 		env.Put(key, vm.popStack())
+		vm.pushStack(&data.TorinoNone{})
 	} else if inst.Name == "ASSIGN_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		_, ok := env.Get(key)
 		if !ok {
-			return errors.New(fmt.Sprintf("undefined symbol %s", key))
+			return 0, errors.New(fmt.Sprintf("undefined symbol %s", key))
 		}
 		env.Put(key, vm.popStack())
+		vm.pushStack(&data.TorinoNone{})
 	} else if inst.Name == "PUSH_NAME" {
 		key := inst.Args[0].(*data.TorinoString).Value
 		val, ok := env.Get(key)
 		if !ok {
-			return errors.New(fmt.Sprintf("undefined symbol %s", key))
+			return 0, errors.New(fmt.Sprintf("undefined symbol %s", key))
 		}
 		vm.pushStack(val)
 	} else if inst.Name == "BINARY_ADD" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("+ takes integer operands")
+			return 0, errors.New("+ takes integer operands")
 		}
 		vm.pushStack(&data.TorinoInt{left.Value + right.Value})
 	} else if inst.Name == "BINARY_SUB" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("- takes integer operands")
+			return 0, errors.New("- takes integer operands")
 		}
 		vm.pushStack(&data.TorinoInt{left.Value - right.Value})
 	} else if inst.Name == "BINARY_MUL" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("* takes integer operands")
+			return 0, errors.New("* takes integer operands")
 		}
 		vm.pushStack(&data.TorinoInt{left.Value * right.Value})
 	} else if inst.Name == "BINARY_DIV" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("/ takes integer operands")
+			return 0, errors.New("/ takes integer operands")
 		}
 		vm.pushStack(&data.TorinoInt{left.Value / right.Value})
 	} else if inst.Name == "BINARY_EQ" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("== takes integer operands")
+			return 0, errors.New("== takes integer operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value == right.Value})
 	} else if inst.Name == "BINARY_GT" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("> takes integer operands")
+			return 0, errors.New("> takes integer operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value > right.Value})
 	} else if inst.Name == "BINARY_LT" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("< takes integer operands")
+			return 0, errors.New("< takes integer operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value < right.Value})
 	} else if inst.Name == "BINARY_GE" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New(">= takes integer operands")
+			return 0, errors.New(">= takes integer operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value >= right.Value})
 	} else if inst.Name == "BINARY_LE" {
 		left, right, ok := vm.popTwoInts()
 		if !ok {
-			return errors.New("<= takes integer operands")
+			return 0, errors.New("<= takes integer operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value <= right.Value})
 	} else if inst.Name == "BINARY_AND" {
 		left, right, ok := vm.popTwoBools()
 		if !ok {
-			return errors.New("and takes boolean operands")
+			return 0, errors.New("and takes boolean operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value && right.Value})
 	} else if inst.Name == "BINARY_OR" {
 		left, right, ok := vm.popTwoBools()
 		if !ok {
-			return errors.New("or takes boolean operands")
+			return 0, errors.New("or takes boolean operands")
 		}
 		vm.pushStack(&data.TorinoBool{left.Value || right.Value})
 	} else if inst.Name == "BINARY_INDEX" {
@@ -156,39 +148,39 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		case *data.TorinoList:
 			index, ok := vm.popStack().(*data.TorinoInt)
 			if !ok {
-				return errors.New("index must be an integer")
+				return 0, errors.New("index must be an integer")
 			}
 
 			if index.Value < 0 || index.Value >= len(indexed.Values) {
-				return errors.New("index out of bounds")
+				return 0, errors.New("index out of bounds")
 			}
 			vm.pushStack(indexed.Values[index.Value])
 		case *data.TorinoMap:
 			index := vm.popStack()
 			val, ok := indexed.Get(index)
 			if !ok {
-				return errors.New("key not in map")
+				return 0, errors.New("key not in map")
 			}
 
 			vm.pushStack(val)
 		case *data.TorinoString:
 			index, ok := vm.popStack().(*data.TorinoInt)
 			if !ok {
-				return errors.New("index must be an integer")
+				return 0, errors.New("index must be an integer")
 			}
 
 			if index.Value < 0 || index.Value >= len(indexed.Value) {
-				return errors.New("index out of bounds")
+				return 0, errors.New("index out of bounds")
 			}
 
 			vm.pushStack(&data.TorinoString{string(indexed.Value[index.Value])})
 		default:
-			return errors.New("only lists and maps may be indexed")
+			return 0, errors.New("only lists and maps may be indexed")
 		}
 	} else if inst.Name == "UNARY_MINUS" {
 		arg, ok := vm.popStack().(*data.TorinoInt)
 		if !ok {
-			return errors.New("unary - takes integer operand")
+			return 0, errors.New("unary - takes integer operand")
 		}
 
 		vm.pushStack(&data.TorinoInt{-arg.Value})
@@ -206,19 +198,19 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 		if ok {
 			res, err := builtin.F(args...)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			vm.pushStack(res)
 		} else {
 			f, ok := tos.(*compiler.TorinoFunction)
 			if !ok {
-				return errors.New("cannot apply non-function")
+				return 0, errors.New("cannot apply non-function")
 			}
 
 			fEnv := NewEnv(env)
 
 			if len(args) != len(f.Params) {
-				return errors.New("wrong number of arguments to user-defined function")
+				return 0, errors.New("wrong number of arguments to user-defined function")
 			}
 
 			for i, param := range f.Params {
@@ -227,7 +219,7 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 
 			val, err := vm.Execute(f.Body, fEnv)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			vm.pushStack(val)
 		}
@@ -250,14 +242,34 @@ func (vm *VirtualMachine) executeOne(inst *compiler.Instruction, env *Environmen
 			mapVal.Put(key, val)
 		}
 		vm.pushStack(mapVal)
+	} else if inst.Name == "LIST_NEXT" {
+		listVal := vm.stack[len(vm.stack)-1].(*data.TorinoList)
+
+		if len(listVal.Values) > 0 {
+			vm.pushStack(listVal.Values[len(listVal.Values)-1])
+			listVal.Values = listVal.Values[:len(listVal.Values)-1]
+			return 1, nil
+		} else {
+			return int(inst.Args[0].(*data.TorinoInt).Value), nil
+		}
+	} else if inst.Name == "POP_STACK" {
+		vm.popStack()
 	} else if inst.Name == "RETURN_VALUE" {
+		return 0, nil
 	} else if inst.Name == "REL_JUMP_IF_FALSE" {
+		cond := vm.popStack().(*data.TorinoBool)
+		if !cond.Value {
+			return int(inst.Args[0].(*data.TorinoInt).Value), nil
+		} else {
+			return 1, nil
+		}
 	} else if inst.Name == "REL_JUMP" {
+		return int(inst.Args[0].(*data.TorinoInt).Value), nil
 	} else {
-		return errors.New(fmt.Sprintf("unknown instruction %s", inst.Name))
+		return 0, errors.New(fmt.Sprintf("unknown instruction %s", inst.Name))
 	}
 
-	return nil
+	return 1, nil
 }
 
 func (vm *VirtualMachine) pushStack(vals ...data.TorinoValue) {

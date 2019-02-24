@@ -48,6 +48,8 @@ func (cmp *Compiler) compileStatement(stmt parser.Statement) ([]*Instruction, er
 		return cmp.compileReturn(v)
 	case *parser.WhileNode:
 		return cmp.compileWhile(v)
+	case *parser.ForNode:
+		return cmp.compileFor(v)
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown statement type %T", stmt))
 	}
@@ -190,6 +192,37 @@ func (cmp *Compiler) compileWhile(whileNode *parser.WhileNode) ([]*Instruction, 
 	insts = append(insts, body...)
 	startJump := &data.TorinoInt{-(len(cond) + len(body) + 1)}
 	return append(insts, NewInst("REL_JUMP", startJump)), nil
+}
+
+func (cmp *Compiler) compileFor(forNode *parser.ForNode) ([]*Instruction, error) {
+	// Compile the iterator value and the body.
+	iterCode, err := cmp.compileExpression(forNode.Iter)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyCode, err := cmp.Compile(forNode.Block)
+	if err != nil {
+		return nil, err
+	}
+
+	insts := []*Instruction{
+		// Just need to initialize the loop variable with some throwaway value,
+		// so we can subsequently use ASSIGN_NAME without worrying about an
+		// undefined symbol error. Hacky but it works.
+		NewInst("PUSH_CONST", &data.TorinoInt{0}),
+		NewInst("STORE_NAME", &data.TorinoString{forNode.Symbol.Value}),
+	}
+
+	insts = append(insts, iterCode...)
+
+	endJump := len(bodyCode) + 3
+	insts = append(insts, NewInst("LIST_NEXT", &data.TorinoInt{endJump}))
+	insts = append(insts, NewInst("ASSIGN_NAME", &data.TorinoString{forNode.Symbol.Value}))
+	insts = append(insts, bodyCode...)
+	startJump := -(len(bodyCode) + 2)
+	insts = append(insts, NewInst("REL_JUMP", &data.TorinoInt{startJump}))
+	return insts, nil
 }
 
 func (cmp *Compiler) compileList(listNode *parser.ListNode) ([]*Instruction, error) {

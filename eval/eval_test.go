@@ -174,6 +174,19 @@ func TestEvalIndexStr(t *testing.T) {
 	checkString(t, val, "a")
 }
 
+func TestEvalForLoop(t *testing.T) {
+	input := `
+let x = 0
+for i in range(6) {
+	x = x + 7
+}
+x
+`
+	val := evalHelper(t, input)
+
+	checkInteger(t, val, 42)
+}
+
 // Helper functions
 
 func evalHelper(t *testing.T, text string) data.TorinoValue {
